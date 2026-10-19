@@ -14,7 +14,7 @@ FluFlu es dictado para el Mac pensado para escribir rápido en cualquier sitio: 
 
 Cómo funciona:
 • Mantén pulsada la tecla de dictado (Opción derecha por defecto), habla y suéltala. El texto aparece donde estés escribiendo.
-• Doble pulsación para dictar con las manos libres; otra pulsación lo termina.
+• Un toque para dictar con las manos libres; otro toque lo termina.
 • Tu voz se reconoce en el propio Mac con el motor de Apple. El audio nunca sale del equipo.
 • Si quieres, FluFlu pule el texto con un modelo de lenguaje en Ollama Cloud, con tu propia cuenta: quita muletillas («eh», «o sea»), corrige la puntuación, respeta tus rectificaciones («a Juan, no, perdón, a Marta») y escribe bien los nombres de tu vocabulario.
 

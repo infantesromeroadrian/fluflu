@@ -101,7 +101,7 @@ struct OnboardingView: View {
     private var footer: some View {
         HStack(alignment: .center, spacing: 16) {
             if let shortcut = settings.shortcuts[.dictate] {
-                Text("Mantén pulsada \(shortcut.displayString) para dictar y suéltala para pegar. Todo se puede cambiar en Ajustes.")
+                Text("Mantén pulsada \(shortcut.displayString) para dictar y suéltala para pegar; un toque dicta con las manos libres. Todo se puede cambiar en Ajustes.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)

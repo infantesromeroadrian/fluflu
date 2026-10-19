@@ -9,7 +9,7 @@ struct MenuBarView: View {
         Text(controller.phase.statusText)
         ForEach(ShortcutAction.allCases, id: \.self) { action in
             if let shortcut = settings.shortcuts[action] {
-                Text("\(shortcut.displayString): mantener para dictar · doble pulsación para fijar").font(.caption)
+                Text("\(shortcut.displayString): mantener para dictar · un toque para fijar").font(.caption)
             }
         }
         if settings.shortcuts.isEmpty {

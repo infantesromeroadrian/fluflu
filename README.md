@@ -18,8 +18,8 @@ con clave de API para pulir el texto (planes y precios en https://ollama.com/pri
 4. La ventana de bienvenida te guía por los permisos de **Micrófono** y **Accesibilidad**, la **clave de
    Ollama Cloud** (enlace para crearla en https://ollama.com/settings/keys) y el **consentimiento** para enviar
    el texto a Ollama Cloud. Puedes volver a abrirla desde el menú: *Bienvenida y permisos…*.
-5. En cualquier app: mantén pulsada **Opción derecha**, habla y suéltala. Doble pulsación para dictar sin
-   sujetar la tecla; otra pulsación lo termina. Idioma, micrófono, tecla y vocabulario se cambian en *Ajustes…*.
+5. En cualquier app: mantén pulsada **Opción derecha**, habla y suéltala. Un toque para dictar sin
+   sujetar la tecla; otro toque lo termina. Idioma, micrófono, tecla y vocabulario se cambian en *Ajustes…*.
 
 ## Privacidad
 
@@ -53,7 +53,7 @@ con clave de API para pulir el texto (planes y precios en https://ollama.com/pri
 
 ## Cómo funciona
 
-1. **Tecla de dictado** (Opción derecha por defecto, cambiable en Ajustes) con tres gestos: mantener pulsada dicta hasta soltar; doble pulsación deja el dictado fijo con las manos libres; una pulsación durante el dictado fijo lo termina. Un tap de CGEvent consume el atajo para que la app activa no lo reciba.
+1. **Tecla de dictado** (Opción derecha por defecto, cambiable en Ajustes) con dos gestos: mantener pulsada dicta hasta soltar; un toque deja el dictado fijo con las manos libres y otro toque lo termina. No hay doble pulsación, para no chocar con el doble toque de Opción de otras apps (Claude Desktop). Un tap de CGEvent consume el atajo para que la app activa no lo reciba.
 2. **Captura** del micrófono con `AVCaptureSession`, que respeta el micrófono elegido en Ajustes (`AVAudioEngine` sigue siempre la entrada por defecto del sistema, y un auricular Bluetooth que se vuelve predeterminado deja los dictados vacíos).
 3. **Transcripción on-device** con `SpeechAnalyzer` + `SpeechTranscriber` de Apple (macOS 26+). El audio no sale del Mac.
 4. **Limpieza opcional** del texto con un modelo de Ollama (Cloud o local): muletillas, puntuación, nombres propios del vocabulario.
@@ -115,7 +115,7 @@ El icono se genera con `swift scripts/render-icon.swift <salida.png>` y se escal
 ```
 FluFlu/FluFlu/
   App/         FluFluApp (MenuBarExtra + Settings)
-  Dictation/   DictationPhase + DictationReducer (fases), DictationGesture (mantener / doble pulsación / terminar), DictationController
+  Dictation/   DictationPhase + DictationReducer (fases), DictationGesture (mantener / toque para fijar y terminar), DictationController
   Hotkey/      KeyShortcut + KeyLabels (modelo), ShortcutEngine (puro), GlobalShortcutTap (CGEvent tap)
   Audio/       AudioIngress (cola acotada), MicrophoneRecorder
   Speech/      SpeechEngine (contrato), AppleSpeechEngine, AnalyzerInputConverter

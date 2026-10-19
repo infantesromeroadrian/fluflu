@@ -1,7 +1,7 @@
 import AppKit
 
 /// Acciones con atajo. Hoy solo hay una: la tecla de dictado, que entiende tres gestos
-/// (mantener, doble pulsación y pulsación para terminar) resueltos por `DictationGesture`.
+/// (mantener, toque para fijar y toque para terminar) resueltos por `DictationGesture`.
 nonisolated enum ShortcutAction: String, CaseIterable, Codable, Sendable {
     case dictate
 

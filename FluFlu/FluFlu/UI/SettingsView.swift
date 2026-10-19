@@ -26,7 +26,7 @@ struct SettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                Text("Mantén pulsada la tecla para dictar hasta soltar. Doble pulsación: dictado fijo con las manos libres; otra pulsación lo termina. Vale cualquier combinación; una tecla sola necesita modificador salvo F1–F19.")
+                Text("Mantén pulsada la tecla para dictar hasta soltar. Un toque: dictado fijo con las manos libres; otro toque lo termina. Vale cualquier combinación; una tecla sola necesita modificador salvo F1–F19.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

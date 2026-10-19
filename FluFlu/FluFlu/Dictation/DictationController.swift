@@ -23,7 +23,6 @@ final class DictationController {
     private let appleCleaner: AppleTranscriptCleaner
     private let hud = DictationHUD()
     private var gesture = DictationGesture()
-    private var gestureTimeout: Task<Void, Never>?
     private var trustPolling: Task<Void, Never>?
     /// Cadencia con la que se reintenta el tap mientras falta Accesibilidad.
     private static let trustPollInterval: Duration = .seconds(2)
@@ -143,15 +142,7 @@ final class DictationController {
             switch command {
             case .start: startDictation()
             case .finish: finishDictation()
-            case .cancel: cancelDictation()
             case .lock: apply(.locked)
-            case .scheduleTimeout(let instant):
-                gestureTimeout?.cancel()
-                gestureTimeout = Task { [weak self] in
-                    try? await Task.sleep(until: instant)
-                    guard let self, !Task.isCancelled else { return }
-                    self.run(self.gesture.timeout(at: .now))
-                }
             }
         }
     }
@@ -172,16 +163,6 @@ final class DictationController {
         guard case .recording = phase else { return }
         recorder.stop()
         apply(.stopRequested)
-    }
-
-    /// Pulsación corta sin segunda pulsación: se descarta el audio sin transcribir ni pegar.
-    private func cancelDictation() {
-        guard case .recording = phase else { return }
-        recorder.stop()
-        session?.cancel()
-        session = nil
-        apply(.cancelled)
-        hud.hide()
     }
 
     private func record() async {

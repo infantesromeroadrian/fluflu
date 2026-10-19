@@ -12,7 +12,8 @@ nonisolated enum DictationFailure: Error, Equatable, Sendable {
     case insertion
 
     #if APP_STORE
-    private static let keyboardDeniedMessage = "Sin permisos de teclado (Privacidad y seguridad): no puedo leer la tecla ni pegar el texto."
+    /// El tap ya escucha cuando sale este aviso: lo que falta es el permiso de pegar, que macOS lista en Accesibilidad.
+    private static let keyboardDeniedMessage = "Falta el permiso para pegar: Ajustes del Sistema → Privacidad y seguridad → Accesibilidad → activa FluFlu."
     #else
     private static let keyboardDeniedMessage = "Sin permiso de Accesibilidad: no puedo pegar el texto ni leer la tecla."
     #endif
@@ -108,7 +109,7 @@ nonisolated enum DictationEvent: Equatable, Sendable {
     case stopRequested
     case cancelled
     case partialTranscript(String)
-    /// Doble pulsación: el dictado sigue sin tecla pulsada.
+    /// Toque corto: el dictado sigue sin tecla pulsada.
     case locked
     case transcriptReady(String)
     case cleanupFinished(String)
