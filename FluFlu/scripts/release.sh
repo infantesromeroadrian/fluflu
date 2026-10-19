@@ -143,6 +143,7 @@ if (( ! DRY_RUN )); then
 fi
 
 step "Listo"
-shasum -a 256 "$DMG" | tee "$DMG.sha256"
+# Solo el nombre del fichero, para que `shasum -c` funcione tras descargarlo junto al .dmg.
+(cd "$BUILD_DIR" && shasum -a 256 "$(basename "$DMG")") | tee "$DMG.sha256"
 echo "Versión $VERSION (build $BUILD_NUMBER)$( (( DRY_RUN )) && echo ', ensayo sin notarizar')"
 echo "$DMG"
