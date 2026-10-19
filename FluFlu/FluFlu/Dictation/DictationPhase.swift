@@ -11,12 +11,18 @@ nonisolated enum DictationFailure: Error, Equatable, Sendable {
     case cleanup(String)
     case insertion
 
+    #if APP_STORE
+    private static let keyboardDeniedMessage = "Sin permisos de teclado (Privacidad y seguridad): no puedo leer la tecla ni pegar el texto."
+    #else
+    private static let keyboardDeniedMessage = "Sin permiso de Accesibilidad: no puedo pegar el texto ni leer la tecla."
+    #endif
+
     var userMessage: String {
         switch self {
         case .microphoneDenied: "Sin permiso de micrófono. Actívalo en Privacidad y seguridad."
         case .speechUnavailable: "El reconocimiento de voz de Apple no está disponible en este Mac."
         case .speechAssetsMissing: "Falta descargar el modelo de voz para el idioma elegido."
-        case .accessibilityDenied: "Sin permiso de Accesibilidad: no puedo pegar el texto ni leer la tecla."
+        case .accessibilityDenied: Self.keyboardDeniedMessage
         case .audioEngine: "No se pudo iniciar la captura de audio."
         case .transcription: "La transcripción falló."
         case .cleanup(let reason): "La limpieza falló: \(reason)"

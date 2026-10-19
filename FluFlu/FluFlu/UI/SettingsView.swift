@@ -18,8 +18,14 @@ struct SettingsView: View {
                 ForEach(ShortcutAction.allCases, id: \.self) { action in
                     ShortcutRow(action: action, settings: settings, controller: controller)
                 }
-                Toggle("Reservar la tecla para FluFlu (otras apps no la verán)", isOn: $settings.reservesDictationKey)
-                    .onChange(of: settings.reservesDictationKey) { controller.applyShortcutChange() }
+                if KeyboardAccess.reservesKey {
+                    Toggle("Reservar la tecla para FluFlu (otras apps no la verán)", isOn: $settings.reservesDictationKey)
+                        .onChange(of: settings.reservesDictationKey) { controller.applyShortcutChange() }
+                } else {
+                    Text("La tecla de dictado también llega a la app activa: elige una que no use otra app.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 Text("Mantén pulsada la tecla para dictar hasta soltar. Doble pulsación: dictado fijo con las manos libres; otra pulsación lo termina. Vale cualquier combinación; una tecla sola necesita modificador salvo F1–F19.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -48,11 +54,11 @@ struct SettingsView: View {
                 } else if let launchAtLoginMessage {
                     Text(launchAtLoginMessage).font(.caption).foregroundStyle(.red)
                 }
-                LabeledContent("Accesibilidad") {
-                    if controller.isAccessibilityTrusted {
-                        Label("Concedida", systemImage: "checkmark.circle").foregroundStyle(.green)
+                LabeledContent(KeyboardAccess.title) {
+                    if controller.hasKeyboardAccess {
+                        Label("Concedido", systemImage: "checkmark.circle").foregroundStyle(.green)
                     } else {
-                        Button("Solicitar…") { controller.requestAccessibility() }
+                        Button("Solicitar…") { controller.requestKeyboardAccess() }
                     }
                 }
             }
@@ -71,6 +77,10 @@ struct SettingsView: View {
                 case .ollama:
                     ollamaFields
                 }
+            }
+
+            Section("Privacidad") {
+                Link("Privacidad de FluFlu: qué sale del Mac y qué no", destination: AppLinks.privacyPolicy)
             }
 
             Section("Vocabulario") {

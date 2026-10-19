@@ -10,3 +10,5 @@ build/
 .swiftpm/
 # macOS
 .DS_Store
+# Identificadores locales de la clave de API de App Store Connect
+FluFlu/scripts/asc.env

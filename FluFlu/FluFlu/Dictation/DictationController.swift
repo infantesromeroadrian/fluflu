@@ -13,7 +13,7 @@ final class DictationController {
     private static let failureDisplay: Duration = .seconds(6)
 
     private(set) var phase: DictationPhase = .idle
-    private(set) var isAccessibilityTrusted = TextInserter.isTrusted
+    private(set) var hasKeyboardAccess = KeyboardAccess.isGranted
 
     private let settings: AppSettings
     private let engine: any SpeechEngine
@@ -38,9 +38,9 @@ final class DictationController {
         self.engine = engine
         self.inserter = inserter
         appleCleaner = AppleTranscriptCleaner(locale: { [settings] in settings.locale })
-        // Sin Accesibilidad no hay tap de teclado ni se puede pegar. En el primer arranque lo pide la
+        // Sin permisos de teclado no hay atajo ni se puede pegar. En el primer arranque los pide la
         // bienvenida, que antes explica para qué; después, el diálogo del sistema directamente.
-        if !isAccessibilityTrusted && settings.onboardingCompleted { TextInserter.requestTrust() }
+        if !hasKeyboardAccess && settings.onboardingCompleted { KeyboardAccess.promptOnce() }
         startShortcuts()
         Task { await warmUp() }
         LaunchAtLogin.applyCommandLineRequest()
@@ -56,45 +56,53 @@ final class DictationController {
     var appleCleanupStatus: String { appleCleaner.statusDescription }
 
     func refreshPermissions() {
-        isAccessibilityTrusted = TextInserter.isTrusted
-        // El tap falla sin Accesibilidad; en cuanto se concede, se reintenta sin reiniciar la app.
-        if isAccessibilityTrusted, shortcuts?.isRunning != true { startShortcuts() }
+        hasKeyboardAccess = KeyboardAccess.isGranted
+        // El tap falla sin permiso para escuchar; en cuanto se concede, se reintenta sin reiniciar la app.
+        if KeyboardAccess.canListen, shortcuts?.isRunning != true { startShortcuts() }
     }
 
-    func requestAccessibility() {
-        // La llamada añade FluFlu a la lista de Accesibilidad, pero su diálogo solo sale la primera
-        // vez: si se descartó, el botón no hacía nada. El panel de Ajustes es la salida que siempre existe.
-        if !TextInserter.requestTrust() { NSWorkspace.shared.open(TextInserter.accessibilitySettingsURL) }
+    func requestKeyboardAccess() {
+        KeyboardAccess.request()
         refreshPermissions()
     }
 
     func applyShortcutChange() {
-        shortcuts?.rebind(settings.shortcuts, reservesModifierKeys: settings.reservesDictationKey)
+        shortcuts?.rebind(settings.shortcuts, reservesModifierKeys: reservesModifierKeys)
     }
 
+    /// En la variante de la tienda el tap solo escucha: el ajuste de reservar la tecla no aplica.
+    private var reservesModifierKeys: Bool { KeyboardAccess.reservesKey && settings.reservesDictationKey }
+
     private func startShortcuts() {
-        let tap = GlobalShortcutTap(bindings: settings.shortcuts, reservesModifierKeys: settings.reservesDictationKey) { [weak self] transition in
+        // Con un tap de solo escucha el sistema puede crearlo sin permiso y no entregar nada: se
+        // espera al permiso para no dar el atajo por activo.
+        guard KeyboardAccess.canListen else { pollTrustUntilGranted(); return }
+        let tap = GlobalShortcutTap(bindings: settings.shortcuts, reservesModifierKeys: reservesModifierKeys) { [weak self] transition in
             self?.handle(transition)
         }
         if tap.start() {
             shortcuts = tap
-            Self.log.info("keyboard tap started; accessibility trusted=\(self.isAccessibilityTrusted)")
+            Self.log.info("keyboard tap started; keyboard access=\(self.hasKeyboardAccess)")
+            // En la tienda escuchar y pegar son permisos distintos: se sigue esperando el de pegar.
+            if !KeyboardAccess.isGranted { pollTrustUntilGranted() }
         } else {
-            Self.log.error("keyboard tap NOT started; accessibility trusted=\(self.isAccessibilityTrusted)")
+            Self.log.error("keyboard tap NOT started; keyboard access=\(self.hasKeyboardAccess)")
             pollTrustUntilGranted()
         }
     }
 
-    /// macOS no avisa cuando el usuario activa Accesibilidad con la app abierta: se consulta hasta que cambie.
+    /// macOS no avisa cuando el usuario concede un permiso con la app abierta: se consulta hasta tener
+    /// todos. Cada vuelta actualiza el estado que ven el menú y Ajustes, y arranca el tap en cuanto se
+    /// puede escuchar aunque falte el permiso de pegar.
     private func pollTrustUntilGranted() {
         guard trustPolling == nil else { return }
         trustPolling = Task { [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: Self.trustPollInterval)
                 guard let self else { return }
-                if TextInserter.isTrusted {
+                self.refreshPermissions()
+                if KeyboardAccess.isGranted {
                     self.trustPolling = nil
-                    self.refreshPermissions()
                     return
                 }
             }
@@ -150,6 +158,10 @@ final class DictationController {
 
     private func startDictation() {
         guard !phase.isBusy else { gesture.reset(); return }
+        // Sin permiso para pegar, el dictado se perdería al final, y con consentimiento ya habría salido
+        // hacia Ollama: se avisa antes de grabar. Solo puede pasar en la tienda, donde escuchar y pegar se
+        // conceden por separado.
+        guard KeyboardAccess.canPost else { gesture.reset(); fail(.accessibilityDenied); return }
         pendingNotice = nil
         noticeReset?.cancel()
         apply(.keyPressed)

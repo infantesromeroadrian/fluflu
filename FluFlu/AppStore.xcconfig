@@ -1,0 +1,10 @@
+// Variante de la Mac App Store. Se aplica por encima del proyecto con `xcodebuild -xcconfig AppStore.xcconfig`
+// (scripts/release-appstore.sh y los tests de la variante). Sin este fichero, Xcode compila la de Developer ID.
+// La tienda exige App Sandbox: el tap pasa a solo escucha y Accesibilidad desaparece del binario (APP_STORE).
+// Bundle propio: contenedor, permisos y llavero separados de la versión de GitHub.
+FLUFLU_BUNDLE_SUFFIX = .AppStore
+ENABLE_APP_SANDBOX = YES
+ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES
+ENABLE_USER_SELECTED_FILES =
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) APP_STORE
+INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO

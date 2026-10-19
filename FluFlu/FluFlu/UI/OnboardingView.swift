@@ -17,7 +17,7 @@ struct OnboardingView: View {
     @State private var hasStoredKey = !((try? KeychainStore.ollamaAPIKey.read()) ?? "").isEmpty
     @State private var keyMessage: String?
 
-    private var canStart: Bool { microphone == .authorized && controller.isAccessibilityTrusted }
+    private var canStart: Bool { microphone == .authorized && controller.hasKeyboardAccess }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -26,10 +26,9 @@ struct OnboardingView: View {
                            detail: "Para escuchar mientras mantienes pulsada la tecla de dictado. El audio se reconoce en el propio Mac.") {
                 microphoneAction
             }
-            OnboardingStep(done: controller.isAccessibilityTrusted, title: "Accesibilidad",
-                           detail: "Para detectar la tecla de dictado desde cualquier app y pegar el texto donde estés escribiendo.") {
-                if !controller.isAccessibilityTrusted {
-                    Button("Abrir Ajustes de Accesibilidad") { controller.requestAccessibility() }
+            OnboardingStep(done: controller.hasKeyboardAccess, title: KeyboardAccess.title, detail: KeyboardAccess.detail) {
+                if !controller.hasKeyboardAccess {
+                    Button(KeyboardAccess.settingsButton) { controller.requestKeyboardAccess() }
                 }
             }
             OnboardingStep(done: hasStoredKey, title: "Clave de Ollama Cloud",
@@ -39,7 +38,11 @@ struct OnboardingView: View {
             OnboardingStep(done: settings.cloudConsent, title: "Envío del texto",
                            detail: "Se envía a ollama.com el texto reconocido y tu vocabulario, nunca el audio. Sin aceptar, FluFlu pega el texto tal como lo reconoce el Mac.") {
                 Toggle("Acepto enviar el texto dictado a Ollama Cloud", isOn: $settings.cloudConsent)
-                Link("Política de privacidad de Ollama", destination: OllamaEndpoint.privacyPolicyURL).font(.caption)
+                HStack {
+                    Link("Privacidad de FluFlu", destination: AppLinks.privacyPolicy)
+                    Link("Política de privacidad de Ollama", destination: OllamaEndpoint.privacyPolicyURL)
+                }
+                .font(.caption)
             }
             Divider()
             footer

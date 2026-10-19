@@ -16,8 +16,8 @@ struct MenuBarView: View {
             Text("Sin atajos: configúralos en Ajustes").font(.caption)
         }
         Divider()
-        if !controller.isAccessibilityTrusted {
-            Button("Conceder permiso de Accesibilidad…") { controller.requestAccessibility() }
+        if !controller.hasKeyboardAccess {
+            Button("Conceder permisos de teclado…") { controller.requestKeyboardAccess() }
         }
         Button("Bienvenida y permisos…") {
             openWindow(id: OnboardingView.windowID)

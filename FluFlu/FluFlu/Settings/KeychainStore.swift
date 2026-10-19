@@ -8,7 +8,9 @@ nonisolated struct KeychainStore: Sendable {
     let service: String
     let account: String
 
-    static let ollamaAPIKey = KeychainStore(service: "com.adrianinfantes.FluFlu", account: "ollama-api-key")
+    /// El servicio es el bundle ID: cada variante (Developer ID y Mac App Store) tiene su propia entrada y
+    /// no choca con la de la otra en el mismo llavero.
+    static let ollamaAPIKey = KeychainStore(service: Bundle.main.bundleIdentifier ?? "com.adrianinfantes.FluFlu", account: "ollama-api-key")
 
     func read() throws -> String? {
         var query = baseQuery

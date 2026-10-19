@@ -10,20 +10,9 @@ final class TextInserter {
     private static let keyCodeV: CGKeyCode = 9
     /// Convención de nspasteboard.org: los gestores de historial del portapapeles no guardan este contenido.
     private static let transientType = NSPasteboard.PasteboardType("org.nspasteboard.TransientType")
-    static let accessibilitySettingsURL = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!
-
-    static var isTrusted: Bool { AXIsProcessTrusted() }
-
-    /// Abre el diálogo del sistema una sola vez; después solo consulta.
-    @discardableResult
-    static func requestTrust() -> Bool {
-        // Clave literal: la constante global de ApplicationServices no es segura bajo Swift 6.
-        let options = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
-        return AXIsProcessTrustedWithOptions(options)
-    }
 
     func insert(_ text: String) async throws {
-        guard Self.isTrusted else { throw DictationFailure.accessibilityDenied }
+        guard KeyboardAccess.canPost else { throw DictationFailure.accessibilityDenied }
         let pasteboard = NSPasteboard.general
         let previous = pasteboard.string(forType: .string)
         // Solo en este Mac: sin la opción, el dictado viajaba a los demás dispositivos por el

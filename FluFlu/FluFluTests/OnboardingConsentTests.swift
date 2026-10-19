@@ -95,3 +95,19 @@ struct OllamaConsentGateTests {
         #expect(RecordingURLProtocol.requests.withLock { $0 } == before + 1)
     }
 }
+
+/// Cada variante compila con sus permisos: la tienda (sandbox) no puede consumir la tecla.
+@MainActor
+struct KeyboardAccessVariantTests {
+    #if APP_STORE
+    @Test func storeVariantListensWithoutReservingTheKey() {
+        #expect(!KeyboardAccess.reservesKey)
+        #expect(KeyboardAccess.title == "Teclado")
+    }
+    #else
+    @Test func directVariantUsesAccessibilityAndReservesTheKey() {
+        #expect(KeyboardAccess.reservesKey)
+        #expect(KeyboardAccess.title == "Accesibilidad")
+    }
+    #endif
+}

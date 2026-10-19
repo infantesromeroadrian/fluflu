@@ -42,7 +42,8 @@ con clave de API para pulir el texto (planes y precios en https://ollama.com/pri
 ## Desinstalar
 
 1. Sal de FluFlu desde su menú y arrastra la app de Aplicaciones a la Papelera.
-2. Opcional, para no dejar rastro: borra la entrada `com.adrianinfantes.FluFlu` en *Acceso a Llaveros*,
+2. Opcional, para no dejar rastro: borra la entrada `com.adrianinfantes.FluFlu` en *Acceso a Llaveros*
+   (la clave de Ollama),
    ejecuta `defaults delete com.adrianinfantes.FluFlu`, elimina `~/Library/Logs/FluFlu` y quita FluFlu de
    *Ajustes del Sistema → Privacidad y seguridad → Micrófono / Accesibilidad*.
 
@@ -100,6 +101,12 @@ perfil de notarización (`xcrun notarytool store-credentials FluFlu-notary --app
 El script pasa los tests, hace archive y export, notariza y grapa la app, crea y firma el `.dmg`, lo notariza,
 lo grapa, lo comprueba con Gatekeeper (`spctl`) y deja el `.dmg` y su `.sha256` en `build/release-<build>/`
 junto a `release.log`. El número de build es la fecha y hora, así que siempre crece.
+Para la Mac App Store hay una variante en sandbox (`AppStore.xcconfig`, condición `APP_STORE`): tap de solo
+escucha con Monitorización de entrada, pegado con el permiso PostEvent, sin Accesibilidad y con bundle propio
+`com.adrianinfantes.FluFlu.AppStore`. `scripts/release-appstore.sh` pasa sus tests, la firma con Apple
+Distribution y el perfil «FluFlu App Store», exporta el `.pkg`, lo comprueba y lo sube a App Store Connect
+(`--no-upload` se queda en el `.pkg`). La ficha y las notas para el revisor están en `AppStore/listing.es.md`.
+
 El icono se genera con `swift scripts/render-icon.swift <salida.png>` y se escala con `sips` a los tamaños de
 `AppIcon.appiconset`.
 

@@ -37,12 +37,18 @@ nonisolated final class ShortcutTapState: @unchecked Sendable {
 }
 
 /// Tap de sesión sobre el teclado. A diferencia de `NSEvent.addGlobalMonitor`, puede consumir
-/// el atajo para que la app activa no lo reciba. Exige permiso de Accesibilidad.
+/// el atajo para que la app activa no lo reciba; eso exige Accesibilidad. En la variante de la Mac App
+/// Store (sandbox) el tap solo escucha, con Monitorización de entrada, y la tecla llega también a la app activa.
 @MainActor
 final class GlobalShortcutTap {
     private static let log = AppLog(category: "shortcuts")
     private static let eventMask: CGEventMask =
         (1 << CGEventType.keyDown.rawValue) | (1 << CGEventType.keyUp.rawValue) | (1 << CGEventType.flagsChanged.rawValue)
+    #if APP_STORE
+    private static let tapOptions: CGEventTapOptions = .listenOnly
+    #else
+    private static let tapOptions: CGEventTapOptions = .defaultTap
+    #endif
 
     private let state: ShortcutTapState
     private var port: CFMachPort?
@@ -65,9 +71,9 @@ final class GlobalShortcutTap {
     func start() -> Bool {
         if port != nil { return true }
         let refcon = Unmanaged.passUnretained(state).toOpaque()
-        guard let port = CGEvent.tapCreate(tap: .cgSessionEventTap, place: .headInsertEventTap, options: .defaultTap,
+        guard let port = CGEvent.tapCreate(tap: .cgSessionEventTap, place: .headInsertEventTap, options: Self.tapOptions,
                                            eventsOfInterest: Self.eventMask, callback: Self.callback, userInfo: refcon) else {
-            Self.log.warning("event tap unavailable; accessibility not granted?")
+            Self.log.warning("event tap unavailable; keyboard permission not granted?")
             return false
         }
         let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, port, 0)
