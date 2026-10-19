@@ -53,7 +53,7 @@ FluFlu is a push-to-talk dictation utility that lives in the menu bar (no Dock i
 
 How to test:
 1. On first launch a welcome window asks for Microphone, Input Monitoring and the post-events permission (shown by macOS under Accessibility), an Ollama Cloud API key and explicit consent to send text to Ollama Cloud.
-2. Grant the permissions in System Settings when prompted. Paste the demo Ollama API key below in the "Clave de Ollama Cloud" field and tick the consent checkbox. Click "Empezar a dictar".
+2. Grant the permissions in System Settings when prompted (after granting the paste permission, reopen FluFlu if it does not detect it). The Ollama key step is optional; you can tick the consent checkbox and click "Empezar a dictar".
 3. Open TextEdit, press and HOLD the RIGHT Option key, say a sentence (Spanish or English; the language is chosen in Settings → Dictado → Idioma), then release the key. The cleaned text is pasted at the cursor.
    Without a key or without consent, FluFlu still works: it pastes the raw transcription.
 
@@ -63,4 +63,4 @@ Why these permissions (sandboxed, no Accessibility API):
 • Post events (CGRequestPostEventAccess; macOS lists this permission in the Accessibility pane): to paste the transcribed text into the frontmost app by posting Command-V, which is the core feature of a dictation tool. FluFlu does not use the Accessibility API (AXUIElement / AXIsProcessTrusted) and does not read or control other apps' UI.
 • Network (client): only to call the Ollama Cloud API with the user's own key, after explicit consent (guideline 5.1.2(i)). Speech recognition runs on device with Apple's SpeechAnalyzer; audio never leaves the Mac.
 
-Demo Ollama API key (valid during review only): [ADRIÁN LA PEGA AQUÍ]
+About the Ollama key: text cleanup runs on each user's own Ollama Cloud account, so FluFlu has no shared key. Without a key, dictation works end to end and FluFlu pastes the on-device transcription as is; the welcome window and Settings show where a key would go. If you need to test the cleanup step, please contact us and we will provide a temporary key.
