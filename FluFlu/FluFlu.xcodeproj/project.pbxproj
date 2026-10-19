@@ -1,0 +1,561 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 110;
+	objects = {
+
+/* Begin PBXContainerItemProxy section */
+		8C0A88FF30802C6600C85D29 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8C0A88E930802C6400C85D29 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8C0A88F030802C6400C85D29;
+			remoteInfo = FluFlu;
+		};
+		8C0A890930802C6600C85D29 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8C0A88E930802C6400C85D29 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8C0A88F030802C6400C85D29;
+			remoteInfo = FluFlu;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		8C0A88F130802C6400C85D29 /* FluFlu.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FluFlu.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		8C0A88FE30802C6600C85D29 /* FluFluTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FluFluTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		8C0A890830802C6600C85D29 /* FluFluUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FluFluUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		8C0A88F330802C6400C85D29 /* FluFlu */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = FluFlu;
+			sourceTree = "<group>";
+		};
+		8C0A890130802C6600C85D29 /* FluFluTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = FluFluTests;
+			sourceTree = "<group>";
+		};
+		8C0A890B30802C6600C85D29 /* FluFluUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = FluFluUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		8C0A88EE30802C6400C85D29 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+		8C0A88FB30802C6600C85D29 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+		8C0A890530802C6600C85D29 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		8C0A88E830802C6400C85D29 = {
+			isa = PBXGroup;
+			children = (
+				8C0A88F330802C6400C85D29 /* FluFlu */,
+				8C0A890130802C6600C85D29 /* FluFluTests */,
+				8C0A890B30802C6600C85D29 /* FluFluUITests */,
+				8C0A88F230802C6400C85D29 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		8C0A88F230802C6400C85D29 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				8C0A88F130802C6400C85D29 /* FluFlu.app */,
+				8C0A88FE30802C6600C85D29 /* FluFluTests.xctest */,
+				8C0A890830802C6600C85D29 /* FluFluUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		8C0A88F030802C6400C85D29 /* FluFlu */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8C0A891030802C6600C85D29 /* Build configuration list for PBXNativeTarget "FluFlu" */;
+			buildPhases = (
+				8C0A88ED30802C6400C85D29 /* Sources */,
+				8C0A88EE30802C6400C85D29 /* Frameworks */,
+				8C0A88EF30802C6400C85D29 /* Resources */,
+			);
+			buildRules = (
+			);
+			fileSystemSynchronizedGroups = (
+				8C0A88F330802C6400C85D29 /* FluFlu */,
+			);
+			name = FluFlu;
+			productName = FluFlu;
+			productReference = 8C0A88F130802C6400C85D29 /* FluFlu.app */;
+			productType = "com.apple.product-type.application";
+		};
+		8C0A88FD30802C6600C85D29 /* FluFluTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8C0A891330802C6600C85D29 /* Build configuration list for PBXNativeTarget "FluFluTests" */;
+			buildPhases = (
+				8C0A88FA30802C6600C85D29 /* Sources */,
+				8C0A88FB30802C6600C85D29 /* Frameworks */,
+				8C0A88FC30802C6600C85D29 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				8C0A890030802C6600C85D29 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				8C0A890130802C6600C85D29 /* FluFluTests */,
+			);
+			name = FluFluTests;
+			productName = FluFluTests;
+			productReference = 8C0A88FE30802C6600C85D29 /* FluFluTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		8C0A890730802C6600C85D29 /* FluFluUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8C0A891630802C6600C85D29 /* Build configuration list for PBXNativeTarget "FluFluUITests" */;
+			buildPhases = (
+				8C0A890430802C6600C85D29 /* Sources */,
+				8C0A890530802C6600C85D29 /* Frameworks */,
+				8C0A890630802C6600C85D29 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				8C0A890A30802C6600C85D29 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				8C0A890B30802C6600C85D29 /* FluFluUITests */,
+			);
+			name = FluFluUITests;
+			productName = FluFluUITests;
+			productReference = 8C0A890830802C6600C85D29 /* FluFluUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		8C0A88E930802C6400C85D29 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2700;
+				LastUpgradeCheck = 2700;
+				TargetAttributes = {
+					8C0A88F030802C6400C85D29 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					8C0A88FD30802C6600C85D29 = {
+						CreatedOnToolsVersion = 27.0;
+						TestTargetID = 8C0A88F030802C6400C85D29;
+					};
+					8C0A890730802C6600C85D29 = {
+						CreatedOnToolsVersion = 27.0;
+						TestTargetID = 8C0A88F030802C6400C85D29;
+					};
+				};
+			};
+			buildConfigurationList = 8C0A88EC30802C6400C85D29 /* Build configuration list for PBXProject "FluFlu" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 8C0A88E830802C6400C85D29;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 8C0A88F230802C6400C85D29 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				8C0A88F030802C6400C85D29 /* FluFlu */,
+				8C0A88FD30802C6600C85D29 /* FluFluTests */,
+				8C0A890730802C6600C85D29 /* FluFluUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		8C0A88EF30802C6400C85D29 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
+		8C0A88FC30802C6600C85D29 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
+		8C0A890630802C6600C85D29 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		8C0A88ED30802C6400C85D29 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
+		};
+		8C0A88FA30802C6600C85D29 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
+		};
+		8C0A890430802C6600C85D29 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		8C0A890030802C6600C85D29 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8C0A88F030802C6400C85D29 /* FluFlu */;
+			targetProxy = 8C0A88FF30802C6600C85D29 /* PBXContainerItemProxy */;
+		};
+		8C0A890A30802C6600C85D29 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8C0A88F030802C6400C85D29 /* FluFlu */;
+			targetProxy = 8C0A890930802C6600C85D29 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		8C0A890E30802C6600C85D29 /* Debug configuration for PBXProject "FluFlu" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 27.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		8C0A890F30802C6600C85D29 /* Release configuration for PBXProject "FluFlu" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 27.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		8C0A891130802C6600C85D29 /* Debug configuration for PBXNativeTarget "FluFlu" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = G2W8J5Z5HS;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "© 2026 Adrián Infantes";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "FluFlu necesita el micrófono para transcribir lo que dictas mientras mantienes pulsada la tecla de dictado.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "FluFlu transcribe tu voz en el propio Mac con el motor de reconocimiento de Apple. El audio no sale del equipo.";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.adrianinfantes.FluFlu;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				REGISTER_APP_GROUPS = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		8C0A891230802C6600C85D29 /* Release configuration for PBXNativeTarget "FluFlu" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = G2W8J5Z5HS;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "© 2026 Adrián Infantes";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "FluFlu necesita el micrófono para transcribir lo que dictas mientras mantienes pulsada la tecla de dictado.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "FluFlu transcribe tu voz en el propio Mac con el motor de reconocimiento de Apple. El audio no sale del equipo.";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.adrianinfantes.FluFlu;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				REGISTER_APP_GROUPS = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		8C0A891430802C6600C85D29 /* Debug configuration for PBXNativeTarget "FluFluTests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = G2W8J5Z5HS;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.adrianinfantes.FluFluTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FluFlu.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/FluFlu";
+			};
+			name = Debug;
+		};
+		8C0A891530802C6600C85D29 /* Release configuration for PBXNativeTarget "FluFluTests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = G2W8J5Z5HS;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.adrianinfantes.FluFluTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FluFlu.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/FluFlu";
+			};
+			name = Release;
+		};
+		8C0A891730802C6600C85D29 /* Debug configuration for PBXNativeTarget "FluFluUITests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.adrianinfantes.FluFluUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = FluFlu;
+			};
+			name = Debug;
+		};
+		8C0A891830802C6600C85D29 /* Release configuration for PBXNativeTarget "FluFluUITests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.adrianinfantes.FluFluUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = FluFlu;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		8C0A88EC30802C6400C85D29 /* Build configuration list for PBXProject "FluFlu" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8C0A890E30802C6600C85D29 /* Debug configuration for PBXProject "FluFlu" */,
+				8C0A890F30802C6600C85D29 /* Release configuration for PBXProject "FluFlu" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		8C0A891030802C6600C85D29 /* Build configuration list for PBXNativeTarget "FluFlu" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8C0A891130802C6600C85D29 /* Debug configuration for PBXNativeTarget "FluFlu" */,
+				8C0A891230802C6600C85D29 /* Release configuration for PBXNativeTarget "FluFlu" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		8C0A891330802C6600C85D29 /* Build configuration list for PBXNativeTarget "FluFluTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8C0A891430802C6600C85D29 /* Debug configuration for PBXNativeTarget "FluFluTests" */,
+				8C0A891530802C6600C85D29 /* Release configuration for PBXNativeTarget "FluFluTests" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		8C0A891630802C6600C85D29 /* Build configuration list for PBXNativeTarget "FluFluUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8C0A891730802C6600C85D29 /* Debug configuration for PBXNativeTarget "FluFluUITests" */,
+				8C0A891830802C6600C85D29 /* Release configuration for PBXNativeTarget "FluFluUITests" */,
+			);
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 8C0A88E930802C6400C85D29 /* Project object */;
+	validationLevel = 1;
+}
