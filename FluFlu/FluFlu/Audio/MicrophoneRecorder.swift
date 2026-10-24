@@ -7,7 +7,8 @@ import OSLog
 /// entrada por defecto del sistema y descarta el dispositivo que se le fija.
 @MainActor
 final class MicrophoneRecorder {
-    private static let log = AppLog(category: "audio")
+    /// `nonisolated`: también se escribe desde la cola de captura, fuera del actor principal.
+    nonisolated private static let log = AppLog(category: "audio")
 
     private var session: AVCaptureSession?
     private var sink: CaptureAudioSink?
