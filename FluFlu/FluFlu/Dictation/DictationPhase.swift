@@ -55,10 +55,12 @@ nonisolated enum DictationPhase: Equatable, Sendable {
     case inserting
     case failed(DictationFailure)
 
+    /// Grabando no se usa un micrófono: macOS ya pone el suyo (el indicador naranja de privacidad) y en la
+    /// barra salían dos. La onda es la misma del panel flotante.
     var menuBarSymbol: String {
         switch self {
         case .idle: "mic"
-        case .recording: "mic.fill"
+        case .recording: "waveform"
         case .transcribing, .cleaning, .inserting: "ellipsis.circle"
         case .failed: "mic.slash"
         }
