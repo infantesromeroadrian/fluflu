@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+Manifiesto de privacidad (obligatorio en App Store Connect para las API de «motivo requerido»).
+Debe coincidir con PRIVACY.md y con la sección App Privacy de App Store Connect:
+- Sin rastreo ni dominios de rastreo.
+- Sin datos recogidos por el autor: el audio no sale del Mac y el texto solo va a Ollama con la cuenta
+  y el consentimiento del propio usuario.
+- UserDefaults (CA92.1): ajustes de la propia app, sin leer ni escribir datos de otras apps.
+-->
+<plist version="1.0">
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>CA92.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

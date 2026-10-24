@@ -4,8 +4,9 @@
 # → comprobaciones → validación → subida. La revisión de Apple se pide aparte, desde App Store Connect.
 #
 # Uso:
-#   scripts/release-appstore.sh            hasta la subida
-#   scripts/release-appstore.sh --no-upload  se queda en el .pkg validado
+#   scripts/release-appstore.sh                  hasta la subida
+#   scripts/release-appstore.sh --validate-only  valida el .pkg con App Store Connect sin subirlo
+#   scripts/release-appstore.sh --no-upload      se queda en el .pkg comprobado en local, sin hablar con Apple
 #
 # Variables: ASC_KEY_ID y ASC_ISSUER_ID (clave de API de App Store Connect, en el entorno o en scripts/asc.env;
 # el .p8 en ~/.appstoreconnect/private_keys/AuthKey_<ID>.p8, donde lo busca altool), BUILD_NUMBER (por defecto,
@@ -27,10 +28,13 @@ PRIVACY_URL="https://github.com/infantesromeroadrian/fluflu/blob/main/PRIVACY.md
 # Tres enteros (año.mesdía.horaminuto) en UTC, para que el cambio de hora no lo haga retroceder, y sin
 # ceros a la izquierda (10#): App Store Connect exige que crezca en cada subida.
 BUILD_NUMBER="${BUILD_NUMBER:-$(date -u +%Y).$((10#$(date -u +%m%d))).$((10#$(date -u +%H%M)))}"
+# VALIDATE: pasar la validación de App Store Connect (las comprobaciones de Apple sobre el binario).
+# UPLOAD: además, subir el build. --validate-only permite comprobar cada cambio sin gastar un build.
 case "${1:-}" in
-    "") UPLOAD=1 ;;
-    --no-upload) UPLOAD=0 ;;
-    *) echo "Uso: $0 [--no-upload]" >&2; exit 2 ;;
+    "") VALIDATE=1; UPLOAD=1 ;;
+    --validate-only) VALIDATE=1; UPLOAD=0 ;;
+    --no-upload) VALIDATE=0; UPLOAD=0 ;;
+    *) echo "Uso: $0 [--validate-only | --no-upload]" >&2; exit 2 ;;
 esac
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -69,7 +73,7 @@ for profile in "$PROFILES_DIR"/*.provisionprofile; do
     if [[ "$name" == "$PROFILE_NAME" ]]; then PROFILE_FOUND=1; fi
 done
 (( PROFILE_FOUND )) || fail "no está instalado el perfil «$PROFILE_NAME» en $PROFILES_DIR"
-if (( UPLOAD )); then
+if (( VALIDATE )); then
     [[ -n "$ASC_KEY_ID" && -n "$ASC_ISSUER_ID" ]] || fail "define ASC_KEY_ID y ASC_ISSUER_ID (entorno o scripts/asc.env)"
     # La guideline 5.1.1(i) exige una política de privacidad accesible: sin ella, Apple rechaza el envío.
     curl -fsI "$PRIVACY_URL" >/dev/null || fail "la política de privacidad no responde: $PRIVACY_URL"
@@ -78,9 +82,11 @@ fi
 
 if [[ "${SKIP_TESTS:-0}" != "1" ]]; then
     step "Tests unitarios de la variante de la tienda"
+    # Fuera del proyecto: si el repo vive en una carpeta de iCloud Drive (Escritorio o Documentos), iCloud
+    # marca cada fichero (com.apple.FinderInfo, fileprovider) y codesign rechaza el bundle de tests.
     xcodebuild test -project "$PROJECT_DIR/FluFlu.xcodeproj" -scheme "$SCHEME" \
         -destination 'platform=macOS,arch=arm64' -only-testing:FluFluTests \
-        -xcconfig "$PROJECT_DIR/AppStore.xcconfig" -derivedDataPath "$BUILD_DIR/dd-tests" -quiet
+        -xcconfig "$PROJECT_DIR/AppStore.xcconfig" -derivedDataPath "$HOME/Library/Developer/Xcode/DerivedData/FluFlu-appstore-tests" -quiet
 fi
 
 step "Archive (build $BUILD_NUMBER)"
@@ -125,19 +131,26 @@ for required in com.apple.security.app-sandbox com.apple.security.network.client
     [[ "$ENTITLEMENTS" == *"$required"* ]] || fail "falta el entitlement $required"
 done
 [[ "$ENTITLEMENTS" != *"get-task-allow"* ]] || fail "la app conserva get-task-allow"
+# App Store Connect rechaza las apps que usan API de «motivo requerido» (UserDefaults) sin declararlas.
+PRIVACY_MANIFEST="$APP/Contents/Resources/PrivacyInfo.xcprivacy"
+[[ -f "$PRIVACY_MANIFEST" ]] || fail "falta PrivacyInfo.xcprivacy en la app"
+plutil -lint "$PRIVACY_MANIFEST" >/dev/null || fail "PrivacyInfo.xcprivacy no es un plist válido"
+[[ "$(plutil -extract NSPrivacyTracking raw "$PRIVACY_MANIFEST")" == "false" ]] || fail "el manifiesto declara rastreo"
 # La variante de la tienda no puede contener Accesibilidad (prohibida en sandbox; motivo de rechazo 2.4.5).
 SYMBOLS="$(nm -u "$APP/Contents/MacOS/FluFlu")"
 [[ "$SYMBOLS" != *"AXIsProcessTrusted"* ]] || fail "el binario usa AXIsProcessTrusted"
 pkgutil --check-signature "$PKG"
 
-if (( UPLOAD )); then
+if (( VALIDATE )); then
     step "Validando con App Store Connect"
     xcrun altool --validate-app -f "$PKG" -t macos --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
+fi
+if (( UPLOAD )); then
     step "Subiendo a App Store Connect"
     xcrun altool --upload-app -f "$PKG" -t macos --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
 fi
 
 step "Listo"
 VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Contents/Info.plist")"
-echo "FluFlu $VERSION (build $BUILD_NUMBER) para la Mac App Store$( (( UPLOAD )) || echo ', sin subir')"
+echo "FluFlu $VERSION (build $BUILD_NUMBER) para la Mac App Store$( (( UPLOAD )) || { (( VALIDATE )) && echo ', validado por Apple, sin subir' || echo ', sin subir ni validar'; })"
 echo "$PKG"

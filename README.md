@@ -104,8 +104,18 @@ junto a `release.log`. El número de build es la fecha y hora, así que siempre 
 Para la Mac App Store hay una variante en sandbox (`AppStore.xcconfig`, condición `APP_STORE`): tap de solo
 escucha con Monitorización de entrada, pegado con el permiso PostEvent, sin Accesibilidad y con bundle propio
 `com.adrianinfantes.FluFlu.AppStore`. `scripts/release-appstore.sh` pasa sus tests, la firma con Apple
-Distribution y el perfil «FluFlu App Store», exporta el `.pkg`, lo comprueba y lo sube a App Store Connect
-(`--no-upload` se queda en el `.pkg`). La ficha y las notas para el revisor están en `AppStore/listing.es.md`.
+Distribution y el perfil «FluFlu App Store», exporta el `.pkg`, lo comprueba (bundle, entitlements, sin
+Accesibilidad, manifiesto de privacidad, firma del instalador), lo valida con App Store Connect y lo sube.
+`--validate-only` hace todo menos la subida: es la comprobación de Apple para cada cambio, sin gastar un build.
+`--no-upload` se queda en el `.pkg` comprobado en local, sin hablar con Apple.
+
+```sh
+scripts/release-appstore.sh --validate-only   # tests + archive + .pkg + validación de Apple, sin subir
+scripts/release-appstore.sh                   # lo mismo y sube el build a App Store Connect
+```
+
+`FluFlu/PrivacyInfo.xcprivacy` declara el uso de `UserDefaults` (motivo `CA92.1`: ajustes de la propia app),
+sin rastreo ni datos recogidos; debe coincidir con `PRIVACY.md` y con *App Privacy* en App Store Connect. La ficha y las notas para el revisor están en `AppStore/listing.es.md`.
 
 El icono se genera con `swift scripts/render-icon.swift <salida.png>` y se escala con `sips` a los tamaños de
 `AppIcon.appiconset`.
