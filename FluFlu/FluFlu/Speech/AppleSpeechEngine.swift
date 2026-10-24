@@ -20,7 +20,25 @@ final class AppleSpeechEngine: SpeechEngine {
             try await request.downloadAndInstall()
         }
         guard await AssetInventory.status(forModules: [module]) == .installed else { throw DictationFailure.speechAssetsMissing }
+        await loadModel(module)
         preparedLocale = locale
+    }
+
+    /// Carga el modelo en memoria con un analizador desechable. Con `modelRetention: .processLifetime`
+    /// queda cargado para los dictados siguientes; sin esto, el primer dictado tras abrir la app pagaba
+    /// la carga dentro de la grabación (hasta 1,7 s medidos). Si falla, no es un error: el dictado lo
+    /// cargará igualmente, solo que más tarde.
+    private func loadModel(_ module: SpeechTranscriber) async {
+        let start = ContinuousClock.now
+        let analyzer = SpeechAnalyzer(modules: [module], options: Self.analyzerOptions)
+        do {
+            let format = await SpeechAnalyzer.bestAvailableAudioFormat(compatibleWith: [module])
+            try await analyzer.prepareToAnalyze(in: format)
+            Self.log.info("speech model loaded in \((ContinuousClock.now - start).formatted(.units(allowed: [.milliseconds])))")
+        } catch {
+            Self.log.warning("speech model preload failed: \(String(describing: error))")
+        }
+        await analyzer.cancelAndFinishNow()
     }
 
     func transcribe(_ ingress: AudioIngress, locale: Locale, onPartial: @escaping @MainActor (String) -> Void) async throws -> TranscriptionOutcome {

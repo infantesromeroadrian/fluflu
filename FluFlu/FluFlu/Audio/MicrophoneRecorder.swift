@@ -14,19 +14,43 @@ final class MicrophoneRecorder {
     private let queue = DispatchQueue(label: "com.adrianinfantes.FluFlu.audio-capture")
     private(set) var ingress = AudioIngress()
 
+    /// Con el permiso ya concedido se responde sin pasar por `requestAccess`, que costaba 30–55 ms en
+    /// cada pulsación; solo se pregunta al sistema mientras el usuario no ha decidido.
     static func requestPermission() async -> Bool {
-        await AVCaptureDevice.requestAccess(for: .audio)
+        switch AVCaptureDevice.authorizationStatus(for: .audio) {
+        case .authorized: true
+        case .notDetermined: await AVCaptureDevice.requestAccess(for: .audio)
+        default: false
+        }
+    }
+
+    /// Inicializa la pila de captura (dispositivo, entrada y sesión) sin arrancarla, para que el primer
+    /// dictado tras abrir la app no pague ~180 ms antes de abrir el micrófono. No enciende el micrófono
+    /// ni el indicador de privacidad, y sin permiso no hace nada para no provocar el diálogo del sistema.
+    func prewarm(deviceUID: String?) {
+        guard AVCaptureDevice.authorizationStatus(for: .audio) == .authorized else { return }
+        let start = ContinuousClock.now
+        guard let device = Self.device(for: deviceUID, warn: false), let input = try? AVCaptureDeviceInput(device: device) else { return }
+        let session = AVCaptureSession()
+        if session.canAddInput(input) { session.addInput(input) }
+        let output = AVCaptureAudioDataOutput()
+        if session.canAddOutput(output) { session.addOutput(output) }
+        Self.log.info("capture stack prewarmed in \(Self.milliseconds(ContinuousClock.now - start)) ms")
+    }
+
+    private static func device(for deviceUID: String?, warn: Bool) -> AVCaptureDevice? {
+        if let deviceUID, !deviceUID.isEmpty {
+            if let device = AVCaptureDevice(uniqueID: deviceUID) { return device }
+            if warn { log.warning("input device \(deviceUID) not found; using system default") }
+        }
+        return AVCaptureDevice.default(for: .audio)
     }
 
     /// `deviceUID` vacío o nil usa la entrada por defecto del sistema. Si el elegido ya no está
     /// conectado, se avisa y se sigue con el predeterminado.
     func start(deviceUID: String?) throws {
-        var device: AVCaptureDevice?
-        if let deviceUID, !deviceUID.isEmpty {
-            device = AVCaptureDevice(uniqueID: deviceUID)
-            if device == nil { Self.log.warning("input device \(deviceUID) not found; using system default") }
-        }
-        guard let device = device ?? AVCaptureDevice.default(for: .audio) else { throw DictationFailure.audioEngine }
+        let setupStart = ContinuousClock.now
+        guard let device = Self.device(for: deviceUID, warn: true) else { throw DictationFailure.audioEngine }
 
         let ingress = AudioIngress()
         let session = AVCaptureSession()
@@ -46,10 +70,12 @@ final class MicrophoneRecorder {
         // suelta de la tecla y convertía un toque en "mantener"; por eso arranca en la cola de captura.
         let name = device.localizedName
         let running = RunningSession(session)
+        let setup = Self.milliseconds(ContinuousClock.now - setupStart)
         queue.async {
+            let runStart = ContinuousClock.now
             running.session.startRunning()
             if running.session.isRunning {
-                Self.log.info("capturing from \(name)")
+                Self.log.info("capturing from \(name) (setup \(setup) ms, start \(Self.milliseconds(ContinuousClock.now - runStart)) ms)")
             } else {
                 Self.log.error("capture session did not start for \(name)")
                 ingress.finish()
@@ -58,6 +84,10 @@ final class MicrophoneRecorder {
         self.ingress = ingress
         self.session = session
         self.sink = sink
+    }
+
+    nonisolated static func milliseconds(_ duration: Duration) -> Int {
+        Int(duration.components.seconds * 1000 + duration.components.attoseconds / 1_000_000_000_000_000)
     }
 
     /// Cierra la entrada: el ingress termina y el consumidor drena lo que ya estaba encolado.

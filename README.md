@@ -148,6 +148,8 @@ xcodebuild -project FluFlu.xcodeproj -scheme FluFlu -destination 'platform=macOS
 
 ## Decisiones
 
+- **Arranque en caliente, motor intacto**: al abrir, FluFlu carga el modelo de voz (`prepareToAnalyze`) e inicializa la pila de captura sin arrancarla; el micrófono sigue en reposo hasta la pulsación (comprobado con `kAudioDevicePropertyDeviceIsRunningSomewhere`). El permiso del micrófono se consulta sin `requestAccess` cuando ya está concedido. Medido en la variante App Store: micrófono abierto en ~170 ms en el primer dictado (antes 400–800 ms) y ~60 ms en los siguientes (antes ~160 ms). El primer texto en la HUD sigue en ~2 s de mediana porque `SpeechTranscriber` progresivo emite en bloques de ~0,96 s de audio, sin retraso propio de procesado. `DictationTranscriber` da el primer texto ~0,7 s antes, pero en muestras de prueba cambió palabras del texto final; usarlo solo para la vista previa, junto al actual, retrasaba el texto final 0,15–0,35 s. Se descartaron ambas opciones.
+
 - **El gesto se mide con la hora del evento**: `CGEvent.timestamp` viaja hasta `DictationController`, que la convierte al reloj del gesto. Si el hilo principal está ocupado preparando el primer dictado, la suelta se procesa tarde pero sigue contando como toque, no como "mantener". El arranque de `AVCaptureSession` va a su propia cola por el mismo motivo.
 
 - **Sin Python**: todo el pipeline es Swift; evita empaquetado, firma y latencia extra.

@@ -110,6 +110,7 @@ final class DictationController {
 
     /// Descarga el modelo del idioma al arrancar para que la primera pulsación no espere.
     func warmUp() async {
+        recorder.prewarm(deviceUID: settings.inputDeviceUID)
         if settings.cleanupEnabled && settings.cleanupEngine == .apple { appleCleaner.prewarm() }
         do { try await engine.prepare(locale: settings.locale) } catch {
             Self.log.error("warm-up failed: \(String(describing: error))")
@@ -168,8 +169,10 @@ final class DictationController {
     private func record() async {
         hud.show(status: phase.statusText)
         do {
+            let readyStart = ContinuousClock.now
             guard await MicrophoneRecorder.requestPermission() else { throw DictationFailure.microphoneDenied }
             try await engine.prepare(locale: settings.locale)
+            Self.log.info("ready to record in \(MicrophoneRecorder.milliseconds(ContinuousClock.now - readyStart)) ms")
             // Si la tecla se soltó mientras esperábamos permisos o modelo, no hay audio que transcribir.
             guard case .recording = phase else { gesture.reset(); apply(.reset); hud.hide(); return }
             try recorder.start(deviceUID: settings.inputDeviceUID)
