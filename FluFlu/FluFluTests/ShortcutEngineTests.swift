@@ -1,4 +1,5 @@
 import AppKit
+import Carbon.HIToolbox
 import Testing
 @testable import FluFlu
 
@@ -12,8 +13,21 @@ struct KeyShortcutTests {
         try KeyShortcut(kind: .key, keyCode: 96, modifiers: [], label: "F5").validate()
     }
 
-    @Test func modifierOnlyIsAccepted() throws {
-        try KeyShortcut.rightOption.validate()
+    @Test func modifierOnlyIsAcceptedWhereTheKeyboardCanBeObserved() throws {
+        try KeyShortcut.rightOption.validate(allowsModifierOnly: true)
+    }
+
+    @Test func modifierOnlyIsRejectedForSystemHotKeys() {
+        #expect(throws: KeyShortcut.ValidationFailure.needsKey) {
+            try KeyShortcut.rightOption.validate(allowsModifierOnly: false)
+        }
+        #expect(throws: Never.self) { try KeyShortcut.controlOptionSpace.validate(allowsModifierOnly: false) }
+    }
+
+    @Test func storeModifiersMapToCarbonMasks() {
+        #expect(SystemHotKeys.carbonModifiers([.control, .option]) == UInt32(controlKey | optionKey))
+        #expect(SystemHotKeys.carbonModifiers([.command, .shift]) == UInt32(cmdKey | shiftKey))
+        #expect(SystemHotKeys.carbonModifiers([]) == 0)
     }
 
     @Test func displayStringFollowsMacOrder() {

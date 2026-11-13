@@ -2,53 +2,42 @@ import AppKit
 
 /// Permisos que necesitan el atajo global (escuchar el teclado) y el pegado (simular ⌘V).
 /// Fuera de la tienda los cubre Accesibilidad, que además deja consumir la tecla. La Mac App Store
-/// exige sandbox, donde Accesibilidad está prohibida: allí se usan Monitorización de entrada para
-/// escuchar y el permiso PostEvent para pegar (compatibles con el sandbox según Apple DTS).
+/// exige sandbox y no admite observar el teclado: allí el atajo es un hot key del sistema, sin
+/// permiso, y solo queda el permiso PostEvent para pegar (compatible con el sandbox según Apple DTS).
 @MainActor
 enum KeyboardAccess {
     #if APP_STORE
-    static var canListen: Bool { CGPreflightListenEventAccess() }
+    /// El atajo es un hot key del sistema (`SystemHotKeys`): no observa el teclado ni pide permiso.
+    static let canListen = true
     static var canPost: Bool { CGPreflightPostEventAccess() }
-    /// La tecla no se puede consumir con un tap de solo escucha: también llega a las demás apps.
+    /// El sistema consume la combinación registrada; no hay modificadoras solas que reservar.
     static let reservesKey = false
-    static let title = "Teclado"
+    static let title = "Pegado automático"
     /// macOS lista el permiso de pegar (PostEvent) en el panel Accesibilidad: se nombra el panel real
     /// para que se encuentre, aunque FluFlu no use las funciones de accesibilidad.
-    static let detail = "Monitorización de entrada, para detectar la tecla de dictado en cualquier app, y en el panel Accesibilidad, el permiso para pegar el texto. La tecla también llega a la app activa."
-    static let settingsButton = "Conceder el siguiente permiso"
-    private static let listenSettingsURL = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent")!
+    static let detail = "Para pegar el texto dictado donde estés escribiendo, FluFlu envía ⌘V a la app activa. macOS muestra este permiso en el panel Accesibilidad. El atajo de dictado no necesita ningún permiso."
+    /// Texto neutro: App Review rechaza botones que dirigen la respuesta a un permiso (5.1.1(iv)).
+    static let settingsButton = "Continuar"
     private static let postSettingsURL = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!
-    /// Si ya se mostró el diálogo de un permiso. `CGRequest*Access` solo lo enseña la primera vez y
-    /// devuelve `false` al momento; recordarlo permite ir a Ajustes en vez de pedir dos veces a la vez.
-    private static let askedListenKey = "keyboardAccess.askedListen"
+    /// Si ya se mostró el diálogo. `CGRequestPostEventAccess` solo lo enseña la primera vez y devuelve
+    /// `false` al momento; recordarlo permite ir a Ajustes en vez de no hacer nada.
     private static let askedPostKey = "keyboardAccess.askedPost"
 
-    /// Un permiso cada vez: primero escuchar y después pegar. La primera vez sale el diálogo del sistema;
-    /// si ya se pidió, se abre el panel de Ajustes que falta.
+    /// La primera vez sale el diálogo del sistema; si ya se pidió, se abre el panel de Ajustes. La
+    /// petición se hace siempre: es la que añade FluFlu a la lista (un `tccutil reset` la quita).
     static func request() {
-        if !canListen {
-            ask(askedListenKey, prompt: CGRequestListenEventAccess, settings: listenSettingsURL)
-        } else if !canPost {
-            ask(askedPostKey, prompt: CGRequestPostEventAccess, settings: postSettingsURL)
-        }
+        guard !canPost else { return }
+        let askedBefore = UserDefaults.standard.bool(forKey: askedPostKey)
+        UserDefaults.standard.set(true, forKey: askedPostKey)
+        if !CGRequestPostEventAccess() && askedBefore { NSWorkspace.shared.open(postSettingsURL) }
     }
 
-    /// Solo el diálogo del permiso que falte primero, sin abrir Ajustes: lo usa el arranque cuando la
-    /// bienvenida ya se completó.
+    /// Solo el diálogo, sin abrir Ajustes: lo usa el arranque cuando la bienvenida ya se completó.
     static func promptOnce() {
-        if !canListen { markAsked(askedListenKey); _ = CGRequestListenEventAccess() }
-        else if !canPost { markAsked(askedPostKey); _ = CGRequestPostEventAccess() }
+        guard !canPost else { return }
+        UserDefaults.standard.set(true, forKey: askedPostKey)
+        _ = CGRequestPostEventAccess()
     }
-
-    /// La petición se hace siempre: además del diálogo, es la que añade FluFlu a la lista de Ajustes (si un
-    /// `tccutil reset` la quitó, el panel saldría sin ella). Ajustes solo se abre si el diálogo ya se vio.
-    private static func ask(_ key: String, prompt: () -> Bool, settings: URL) {
-        let askedBefore = UserDefaults.standard.bool(forKey: key)
-        markAsked(key)
-        if !prompt() && askedBefore { NSWorkspace.shared.open(settings) }
-    }
-
-    private static func markAsked(_ key: String) { UserDefaults.standard.set(true, forKey: key) }
     #else
     static var canListen: Bool { AXIsProcessTrusted() }
     static var canPost: Bool { AXIsProcessTrusted() }

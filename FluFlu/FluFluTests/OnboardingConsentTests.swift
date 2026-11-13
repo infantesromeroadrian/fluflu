@@ -100,9 +100,13 @@ struct OllamaConsentGateTests {
 @MainActor
 struct KeyboardAccessVariantTests {
     #if APP_STORE
-    @Test func storeVariantListensWithoutReservingTheKey() {
+    @Test func storeVariantNeedsNoPermissionToListen() {
+        // El atajo es un hot key del sistema: lo único que se pide es el permiso de pegar.
+        #expect(KeyboardAccess.canListen)
         #expect(!KeyboardAccess.reservesKey)
-        #expect(KeyboardAccess.title == "Teclado")
+        #expect(!KeyShortcut.supportsModifierOnly)
+        #expect(KeyboardAccess.title == "Pegado automático")
+        #expect(KeyboardAccess.settingsButton == "Continuar")
     }
     #else
     @Test func directVariantUsesAccessibilityAndReservesTheKey() {

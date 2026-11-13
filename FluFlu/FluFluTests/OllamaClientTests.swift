@@ -68,7 +68,8 @@ struct AppSettingsTests {
     @Test func defaultsPointToSpanishCloudCleanup() {
         let settings = freshSettings()
         #expect(settings.localeIdentifier == "es-ES")
-        #expect(settings.shortcuts == [.dictate: .rightOption])
+        // La tienda no admite una modificadora sola: allí el atajo de fábrica es una combinación.
+        #expect(settings.shortcuts == [.dictate: KeyShortcut.supportsModifierOnly ? .rightOption : .controlOptionSpace])
         #expect(settings.cleanupEnabled)
         #expect(settings.ollamaEndpoint?.host == .cloud)
     }

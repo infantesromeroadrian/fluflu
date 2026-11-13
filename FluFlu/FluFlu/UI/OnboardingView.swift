@@ -2,8 +2,10 @@ import AVFoundation
 import SwiftUI
 
 /// Guía del primer arranque: permisos, clave de Ollama Cloud y consentimiento para enviar el texto.
-/// Un usuario nuevo no sabe que FluFlu necesita Accesibilidad para leer la tecla y pegar, ni que el
-/// texto sale del Mac para limpiarse; aquí se explica antes de pedir nada.
+/// Un usuario nuevo no sabe que FluFlu necesita un permiso para pegar (y, fuera de la tienda, para
+/// leer la tecla), ni que el texto sale del Mac para limpiarse; aquí se explica antes de pedir nada.
+/// Los botones que preceden a un diálogo de permiso llevan texto neutro («Continuar»): App Review
+/// rechaza los que dirigen la respuesta (guía 5.1.1(iv), 2026-10-27).
 struct OnboardingView: View {
     static let windowID = "onboarding"
     private static let microphoneSettingsURL = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone")!
@@ -14,7 +16,7 @@ struct OnboardingView: View {
 
     @State private var microphone = AVCaptureDevice.authorizationStatus(for: .audio)
     @State private var apiKey = ""
-    @State private var hasStoredKey = !((try? KeychainStore.ollamaAPIKey.read()) ?? "").isEmpty
+    @State private var hasStoredKey = false
     @State private var keyMessage: String?
 
     private var canStart: Bool { microphone == .authorized && controller.hasKeyboardAccess }
@@ -36,7 +38,7 @@ struct OnboardingView: View {
                 keyFields
             }
             OnboardingStep(done: settings.cloudConsent, title: "Envío del texto",
-                           detail: "Se envía a ollama.com el texto reconocido y tu vocabulario, nunca el audio. Sin aceptar, FluFlu pega el texto tal como lo reconoce el Mac.") {
+                           detail: "Se envía a ollama.com el texto reconocido y tu vocabulario, nunca el audio. Sin aceptar, el modo automático pega el original. Con la recuperación de Ajustes activada, el dictado queda pendiente: el menú permite reintentar, pegar original o descartar.") {
                 Toggle("Acepto enviar el texto dictado a Ollama Cloud", isOn: $settings.cloudConsent)
                 HStack {
                     Link("Privacidad de FluFlu", destination: AppLinks.privacyPolicy)
@@ -50,7 +52,12 @@ struct OnboardingView: View {
         .padding(24)
         .frame(width: 520)
         // Una app de barra de menús no pasa al frente sola: sin esto la ventana nacía detrás de las demás.
-        .onAppear { NSApp.activate() }
+        .onAppear {
+            if settings.ollamaEndpoint?.requiresAPIKey == true {
+                hasStoredKey = !((try? KeychainStore.ollamaAPIKey.read()) ?? "").isEmpty
+            }
+            NSApp.activate()
+        }
         .task { await refreshWhileVisible() }
     }
 
@@ -73,7 +80,7 @@ struct OnboardingView: View {
         case .authorized:
             EmptyView()
         case .notDetermined:
-            Button("Permitir el micrófono") {
+            Button("Continuar") {
                 Task {
                     _ = await MicrophoneRecorder.requestPermission()
                     microphone = AVCaptureDevice.authorizationStatus(for: .audio)

@@ -84,9 +84,11 @@ if [[ "${SKIP_TESTS:-0}" != "1" ]]; then
     step "Tests unitarios de la variante de la tienda"
     # Fuera del proyecto: si el repo vive en una carpeta de iCloud Drive (Escritorio o Documentos), iCloud
     # marca cada fichero (com.apple.FinderInfo, fileprovider) y codesign rechaza el bundle de tests.
+    # Identidad aislada para no redirigir el inicio de la app instalada al host de pruebas.
     xcodebuild test -project "$PROJECT_DIR/FluFlu.xcodeproj" -scheme "$SCHEME" \
         -destination 'platform=macOS,arch=arm64' -only-testing:FluFluTests \
-        -xcconfig "$PROJECT_DIR/AppStore.xcconfig" -derivedDataPath "$HOME/Library/Developer/Xcode/DerivedData/FluFlu-appstore-tests" -quiet
+        -xcconfig "$PROJECT_DIR/AppStore.xcconfig" -derivedDataPath "$HOME/Library/Developer/Xcode/DerivedData/FluFlu-appstore-tests" \
+        PRODUCT_BUNDLE_IDENTIFIER=com.adrianinfantes.FluFlu.Validation.AppStore -quiet
 fi
 
 step "Archive (build $BUILD_NUMBER)"
@@ -139,6 +141,9 @@ plutil -lint "$PRIVACY_MANIFEST" >/dev/null || fail "PrivacyInfo.xcprivacy no es
 # La variante de la tienda no puede contener Accesibilidad (prohibida en sandbox; motivo de rechazo 2.4.5).
 SYMBOLS="$(nm -u "$APP/Contents/MacOS/FluFlu")"
 [[ "$SYMBOLS" != *"AXIsProcessTrusted"* ]] || fail "el binario usa AXIsProcessTrusted"
+# Tampoco puede observar el teclado: App Review rechazó el tap de escucha (2.4.5, 2026-10-27).
+[[ "$SYMBOLS" != *"CGEventTapCreate"* ]] || fail "el binario crea un event tap"
+[[ "$SYMBOLS" != *"CGRequestListenEventAccess"* ]] || fail "el binario pide Monitorización de entrada"
 pkgutil --check-signature "$PKG"
 
 if (( VALIDATE )); then

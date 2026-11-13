@@ -7,6 +7,7 @@ struct MenuBarView: View {
 
     var body: some View {
         Text(controller.phase.statusText)
+        if let notice = controller.audioRestoreNotice { Text(notice) }
         ForEach(ShortcutAction.allCases, id: \.self) { action in
             if let shortcut = settings.shortcuts[action] {
                 Text("\(shortcut.displayString): mantener para dictar · un toque para fijar").font(.caption)
@@ -16,8 +17,20 @@ struct MenuBarView: View {
             Text("Sin atajos: configúralos en Ajustes").font(.caption)
         }
         Divider()
+        if case .recovery = controller.phase {
+            if !controller.deliveryUncertain {
+                Button("Reintentar limpieza") { controller.retryCleanup() }
+                Button("Pegar original") { controller.pasteOriginal() }
+            }
+            Button("Descartar dictado") { controller.discardPending() }
+            Divider()
+        } else if controller.phase.isBusy {
+            Button("Cancelar dictado") { controller.cancelDictation() }
+                .disabled(controller.phase == .inserting)
+            Divider()
+        }
         if !controller.hasKeyboardAccess {
-            Button("Conceder permisos de teclado…") { controller.requestKeyboardAccess() }
+            Button("Permisos…") { controller.requestKeyboardAccess() }
         }
         Button("Bienvenida y permisos…") {
             openWindow(id: OnboardingView.windowID)

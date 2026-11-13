@@ -36,19 +36,21 @@ nonisolated final class ShortcutTapState: @unchecked Sendable {
     }
 }
 
+/// Origen de los atajos de dictado según la variante: la tienda no puede observar el teclado.
+#if APP_STORE
+typealias DictationShortcutSource = SystemHotKeys
+#else
+typealias DictationShortcutSource = GlobalShortcutTap
+
 /// Tap de sesión sobre el teclado. A diferencia de `NSEvent.addGlobalMonitor`, puede consumir
-/// el atajo para que la app activa no lo reciba; eso exige Accesibilidad. En la variante de la Mac App
-/// Store (sandbox) el tap solo escucha, con Monitorización de entrada, y la tecla llega también a la app activa.
+/// el atajo para que la app activa no lo reciba; eso exige Accesibilidad. No se compila en la variante
+/// de la Mac App Store: App Review no admite observar el teclado (guía 2.4.5) y allí se usa `SystemHotKeys`.
 @MainActor
 final class GlobalShortcutTap {
     private static let log = AppLog(category: "shortcuts")
     private static let eventMask: CGEventMask =
         (1 << CGEventType.keyDown.rawValue) | (1 << CGEventType.keyUp.rawValue) | (1 << CGEventType.flagsChanged.rawValue)
-    #if APP_STORE
-    private static let tapOptions: CGEventTapOptions = .listenOnly
-    #else
     private static let tapOptions: CGEventTapOptions = .defaultTap
-    #endif
 
     private let state: ShortcutTapState
     private var port: CFMachPort?
@@ -62,8 +64,11 @@ final class GlobalShortcutTap {
         }
     }
 
-    func rebind(_ bindings: [ShortcutAction: KeyShortcut], reservesModifierKeys: Bool) {
+    /// Siempre `true`: el tap acepta cualquier atajo. El valor existe por paridad con `SystemHotKeys`.
+    @discardableResult
+    func rebind(_ bindings: [ShortcutAction: KeyShortcut], reservesModifierKeys: Bool) -> Bool {
         state.rebind(bindings, reservesModifierKeys: reservesModifierKeys)
+        return true
     }
 
     /// Devuelve `false` si el sistema no concede el tap (normalmente, falta Accesibilidad).
@@ -117,3 +122,4 @@ final class GlobalShortcutTap {
         return state.handle(snapshot) ? nil : Unmanaged.passUnretained(event)
     }
 }
+#endif

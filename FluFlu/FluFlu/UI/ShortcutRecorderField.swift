@@ -31,7 +31,10 @@ struct ShortcutRow: View {
         isRecording = false
         if let shortcut {
             do { try shortcut.validate() } catch {
-                validationMessage = "\(shortcut.displayString) escribiría en las apps: añade un modificador."
+                validationMessage = switch error {
+                case .needsModifier: "\(shortcut.displayString) escribiría en las apps: añade un modificador."
+                case .needsKey: "Esta versión necesita una tecla además del modificador, por ejemplo ⌃⌥Espacio."
+                }
                 return
             }
             if let taken = settings.shortcuts.first(where: { $0.key != action && $0.value == shortcut }) {
@@ -39,9 +42,9 @@ struct ShortcutRow: View {
                 return
             }
         }
-        validationMessage = nil
         settings.shortcuts[action] = shortcut
-        controller.applyShortcutChange()
+        validationMessage = controller.applyShortcutChange() ? nil
+            : "macOS no deja registrar ese atajo: ya lo usa el sistema u otra app. Elige otro."
     }
 }
 

@@ -17,12 +17,15 @@ final class AppSettings {
         static let inputDeviceUID = "inputDeviceUID"
         static let onboardingCompleted = "onboardingCompleted"
         static let cloudConsent = "cloudConsent"
+        static let recoverFailedCleanup = "recoverFailedCleanup"
+        static let muteOutputDuringDictation = "muteOutputDuringDictation"
     }
 
     static let defaultLocaleIdentifier = "es-ES"
     static let defaultCloudModel = "gemma4:31b"
     static let defaultLocalModel = "gemma4"
-    static let defaultShortcuts: [ShortcutAction: KeyShortcut] = [.dictate: .rightOption]
+    static let defaultShortcuts: [ShortcutAction: KeyShortcut] =
+        [.dictate: KeyShortcut.supportsModifierOnly ? .rightOption : .controlOptionSpace]
 
     private let defaults: UserDefaults
 
@@ -47,11 +50,17 @@ final class AppSettings {
     /// Sin él, ninguna petición sale del equipo.
     var cloudConsent: Bool { didSet { defaults.set(cloudConsent, forKey: Key.cloudConsent) } }
 
+    /// Mantener el original en memoria para decidir qué hacer si la limpieza falla.
+    var recoverFailedCleanup: Bool { didSet { defaults.set(recoverFailedCleanup, forKey: Key.recoverFailedCleanup) } }
+    var muteOutputDuringDictation: Bool { didSet { defaults.set(muteOutputDuringDictation, forKey: Key.muteOutputDuringDictation) } }
+
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         localeIdentifier = defaults.string(forKey: Key.localeIdentifier) ?? Self.defaultLocaleIdentifier
         if let data = defaults.data(forKey: Key.shortcuts), let stored = try? JSONDecoder().decode([ShortcutAction: KeyShortcut].self, from: data) {
-            shortcuts = stored
+            // Un atajo guardado que la variante ya no puede registrar (Opción derecha en la tienda)
+            // vuelve al de fábrica: sin esto la tecla de dictado quedaría muerta tras actualizar.
+            shortcuts = stored.mapValues { (try? $0.validate()) == nil ? Self.defaultShortcuts[.dictate] ?? $0 : $0 }
         } else {
             shortcuts = Self.defaultShortcuts
         }
@@ -68,6 +77,8 @@ final class AppSettings {
         inputDeviceUID = defaults.string(forKey: Key.inputDeviceUID) ?? ""
         onboardingCompleted = defaults.bool(forKey: Key.onboardingCompleted)
         cloudConsent = defaults.bool(forKey: Key.cloudConsent)
+        recoverFailedCleanup = defaults.bool(forKey: Key.recoverFailedCleanup)
+        muteOutputDuringDictation = defaults.bool(forKey: Key.muteOutputDuringDictation)
     }
 
     var locale: Locale { Locale(identifier: localeIdentifier) }
@@ -85,7 +96,8 @@ final class AppSettings {
             return OllamaEndpoint(host: .cloud, baseURL: OllamaEndpoint.cloudBaseURL, model: ollamaModel)
         case .local:
             guard let url = URL(string: ollamaLocalURL), let scheme = url.scheme, ["http", "https"].contains(scheme), url.host() != nil else { return nil }
-            return OllamaEndpoint(host: .local, baseURL: url, model: ollamaModel)
+            let endpoint = OllamaEndpoint(host: .local, baseURL: url, model: ollamaModel)
+            return endpoint.isValid ? endpoint : nil
         }
     }
 }

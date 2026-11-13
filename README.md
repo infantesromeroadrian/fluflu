@@ -27,10 +27,13 @@ con clave de API para pulir el texto (planes y precios en https://ollama.com/pri
 - **El texto sale solo si lo aceptas.** Con la limpieza activada y tu consentimiento, FluFlu envía por HTTPS
   a ollama.com el texto reconocido, tu vocabulario y las instrucciones de limpieza, con tu propia clave. Ollama
   lo trata según su política de privacidad: https://ollama.com/privacy. Sin consentimiento no sale ninguna
-  petición y se pega el texto tal como lo reconoce el Mac. Lo mismo si en Ajustes apuntas a otro servidor de
+  petición; por defecto se pega el texto tal como lo reconoce el Mac (con recuperación activada, queda pendiente). Lo mismo si en Ajustes apuntas a otro servidor de
   Ollama: solo uno en este mismo Mac (`localhost`) no pide consentimiento.
 - **El autor de FluFlu no recibe nada**: no hay servidor propio, analítica ni telemetría.
-- **La clave** se guarda en el llavero de macOS, nunca en las preferencias ni en el registro.
+- **La clave** se guarda en el llavero de macOS, nunca en las preferencias ni en el registro. Solo la cuenta
+  Cloud seleccionada puede leerla y enviarla al origen HTTPS `ollama.com`, puerto 443, sin credenciales en
+  la URL. Un servidor local o personalizado nunca recibe esa clave. Se rechazan todas las redirecciones:
+  configura la URL final y revisa el consentimiento antes de reintentar.
 - **El portapapeles** se usa un instante para pegar, solo en este Mac (no pasa a tus otros dispositivos por el
   Portapapeles Universal) y marcado para que los gestores de historial no lo guarden. Si contenía texto plano,
   se restaura; el formato y otro contenido (una imagen, un fichero) no se conservan.
@@ -57,9 +60,31 @@ con clave de API para pulir el texto (planes y precios en https://ollama.com/pri
 2. **Captura** del micrófono con `AVCaptureSession`, que respeta el micrófono elegido en Ajustes (`AVAudioEngine` sigue siempre la entrada por defecto del sistema, y un auricular Bluetooth que se vuelve predeterminado deja los dictados vacíos).
 3. **Transcripción on-device** con `SpeechAnalyzer` + `SpeechTranscriber` de Apple (macOS 26+). El audio no sale del Mac.
 4. **Limpieza opcional** del texto con un modelo de Ollama (Cloud o local): muletillas, puntuación, nombres propios del vocabulario.
-5. **Inserción** en la app activa vía portapapeles y ⌘V simulado; el portapapeles anterior se restaura.
+5. **Inserción** en el proceso original vía portapapeles y ⌘V dirigido por PID. Se comprueba su identidad
+   (fecha de arranque y bundle cuando está disponible) antes del despacho; nunca se vuelve a envío global.
+   El portapapeles anterior se restaura. No se garantiza un campo concreto ni confirmación de recepción.
 
-Un fallo en la limpieza nunca pierde el dictado: se pega el texto bruto y la HUD lo avisa.
+La salida de Ollama siempre pasa comprobaciones deterministas de cifras (orden y cantidad), negaciones,
+rutas, URLs, identificadores y pérdida importante de texto. Admiten puntuación, mayúsculas en prosa,
+muletillas y vocabulario autorizado; no demuestran equivalencia semántica y pueden rechazar cambios válidos.
+
+En *Ajustes → Limpieza del texto*, **Decidir qué hacer si la limpieza falla** está desactivado por defecto:
+se conserva el comportamiento de pegar el original y avisar. Al activarlo, el original queda solo en memoria
+y el menú ofrece **Reintentar limpieza**, **Pegar original** y **Descartar dictado**. Cada reintento consulta
+el endpoint y consentimiento vigentes. No puede empezar otro dictado hasta resolver el pendiente; cerrar
+la app lo descarta. Si cambia de aplicación, vuelva al destino original antes de pegar desde el menú.
+**Cancelar dictado** interrumpe captura o procesamiento y conserva un original ya reconocido. Una inserción
+iniciada termina su limpieza del portapapeles; si su entrega queda incierta, solo se permite descartar para
+no duplicar el texto.
+
+En *Ajustes → Dictado*, **Silenciar la salida mientras grabo** también está desactivado por defecto. Usa
+CoreAudio únicamente si el dispositivo ofrece mute escribible; no baja el volumen ni cambia de salida.
+Al parar, fallar, cancelar o salir normalmente, restaura solo el mute que puso sobre el mismo dispositivo
+(UID). Un cambio manual de mute cede el control. Si cambia la salida, restaura únicamente el dispositivo
+anterior todavía conectado y con el mismo UID; no toca la nueva salida.
+La restauración hace como máximo dos intentos inmediatos; si no puede completarse, el menú pide comprobar
+el sonido. Es best-effort: un driver puede agrupar notificaciones y ocultar intervenciones muy rápidas;
+un cierre forzado, SIGKILL o desconexión no permiten garantizar la restauración.
 
 ## Requisitos
 
@@ -101,8 +126,9 @@ perfil de notarización (`xcrun notarytool store-credentials FluFlu-notary --app
 El script pasa los tests, hace archive y export, notariza y grapa la app, crea y firma el `.dmg`, lo notariza,
 lo grapa, lo comprueba con Gatekeeper (`spctl`) y deja el `.dmg` y su `.sha256` en `build/release-<build>/`
 junto a `release.log`. El número de build es la fecha y hora, así que siempre crece.
-Para la Mac App Store hay una variante en sandbox (`AppStore.xcconfig`, condición `APP_STORE`): tap de solo
-escucha con Monitorización de entrada, pegado con el permiso PostEvent, sin Accesibilidad y con bundle propio
+Para la Mac App Store hay una variante en sandbox (`AppStore.xcconfig`, condición `APP_STORE`): atajo como hot
+key del sistema (`RegisterEventHotKey`, sin permiso de teclado; ⌃⌥Espacio por defecto porque no admite una
+modificadora sola), pegado con el permiso PostEvent, sin event tap ni Accesibilidad y con bundle propio
 `com.adrianinfantes.FluFlu.AppStore`. `scripts/release-appstore.sh` pasa sus tests, la firma con Apple
 Distribution y el perfil «FluFlu App Store», exporta el `.pkg`, lo comprueba (bundle, entitlements, sin
 Accesibilidad, manifiesto de privacidad, firma del instalador), lo valida con App Store Connect y lo sube.
@@ -126,7 +152,7 @@ El icono se genera con `swift scripts/render-icon.swift <salida.png>` y se escal
 FluFlu/FluFlu/
   App/         FluFluApp (MenuBarExtra + Settings)
   Dictation/   DictationPhase + DictationReducer (fases), DictationGesture (mantener / toque para fijar y terminar), DictationController
-  Hotkey/      KeyShortcut + KeyLabels (modelo), ShortcutEngine (puro), GlobalShortcutTap (CGEvent tap)
+  Hotkey/      KeyShortcut + KeyLabels (modelo), ShortcutEngine (puro), GlobalShortcutTap (CGEvent tap, Developer ID), SystemHotKeys (hot key del sistema, App Store)
   Audio/       AudioIngress (cola acotada), MicrophoneRecorder
   Speech/      SpeechEngine (contrato), AppleSpeechEngine, AnalyzerInputConverter
   Cleanup/     CleanupPrompt (prompt versionado), OllamaClient, TranscriptCleaner, CleanupGuard, AppleTranscriptCleaner (no se ofrece)
@@ -153,8 +179,19 @@ tail -f ~/Library/Logs/FluFlu/FluFlu.log
 
 ```sh
 cd FluFlu
-xcodebuild -project FluFlu.xcodeproj -scheme FluFlu -destination 'platform=macOS' test -only-testing:FluFluTests
+xcodebuild -project FluFlu.xcodeproj -scheme FluFlu -configuration Debug -destination 'platform=macOS' \
+  -derivedDataPath /private/tmp/fluflu-tests-direct -only-testing:FluFluTests \
+  PRODUCT_BUNDLE_IDENTIFIER=com.adrianinfantes.FluFlu.Validation.Direct test
+xcodebuild -project FluFlu.xcodeproj -scheme FluFlu -configuration Debug -destination 'platform=macOS' \
+  -xcconfig AppStore.xcconfig -derivedDataPath /private/tmp/fluflu-tests-store -only-testing:FluFluTests \
+  PRODUCT_BUNDLE_IDENTIFIER=com.adrianinfantes.FluFlu.Validation.AppStore test
 ```
+
+El host DEBUG de XCTest con identidad `.Validation.` arranca con efectos inertes, preferencias aisladas y
+sin vistas operativas: no instala atajos, lee claves, registra inicio de sesión, abre el micrófono ni llama
+proveedores. Las pruebas del controlador usan efectos inyectados; las de HTTP, `URLProtocol` sintético.
+Las pruebas de mute usan dispositivos simulados: pasar la suite no demuestra soporte físico ni del sandbox.
+Las builds normales y Release conservan su identidad y arranque; no ejecutar tests con el bundle de la app diaria.
 
 ## Decisiones
 

@@ -25,6 +25,16 @@ nonisolated struct KeyShortcut: Codable, Equatable, Hashable, Sendable {
     static let relevantModifiers: NSEvent.ModifierFlags = [.command, .option, .control, .shift]
 
     static let rightOption = KeyShortcut(kind: .modifierOnly, keyCode: 61, modifiers: .option, label: "Opción derecha")
+    /// Atajo por defecto en la Mac App Store, donde el sistema no registra modificadoras solas.
+    static let controlOptionSpace = KeyShortcut(kind: .key, keyCode: 49, modifiers: [.control, .option], label: "Espacio")
+
+    /// Si la variante admite una modificadora sola como atajo. En la tienda el atajo es un hot key
+    /// del sistema, que exige una tecla.
+    #if APP_STORE
+    static let supportsModifierOnly = false
+    #else
+    static let supportsModifierOnly = true
+    #endif
 
     let kind: Kind
     let keyCode: UInt16
@@ -59,9 +69,12 @@ nonisolated struct KeyShortcut: Codable, Equatable, Hashable, Sendable {
     enum ValidationFailure: Error, Equatable {
         /// Una tecla corriente sin modificador se la robaríamos a todas las apps.
         case needsModifier
+        /// Una modificadora sola no se puede registrar como hot key del sistema.
+        case needsKey
     }
 
-    func validate() throws(ValidationFailure) {
+    func validate(allowsModifierOnly: Bool = KeyShortcut.supportsModifierOnly) throws(ValidationFailure) {
+        if kind == .modifierOnly && !allowsModifierOnly { throw .needsKey }
         guard kind == .key, modifiers.isEmpty, !KeyLabels.isStandaloneSafe(keyCode) else { return }
         throw .needsModifier
     }
