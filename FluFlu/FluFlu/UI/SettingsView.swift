@@ -4,7 +4,7 @@ struct SettingsView: View {
     @Bindable var settings: AppSettings
     let controller: DictationController
 
-    @State private var apiKey: String = (try? KeychainStore.ollamaAPIKey.read()) ?? ""
+    @State private var apiKey = ""
     @State private var keychainMessage: String?
     @State private var inputDevices: [AudioInputDevice] = []
     @State private var launchAtLogin = LaunchAtLogin.isEnabled
@@ -36,6 +36,9 @@ struct SettingsView: View {
                     Text("Predeterminado del sistema").tag("")
                     ForEach(inputDevices) { Text($0.name).tag($0.uid) }
                 }
+                Toggle("Silenciar la salida mientras grabo", isOn: $settings.muteOutputDuringDictation)
+                Text("Opcional. Solo en dispositivos con mute compatible. Al parar restaura el mute propio si no lo cambiaste manualmente. Si cambias de salida, solo restaura la anterior; no se garantiza tras un cierre forzado.")
+                    .font(.caption).foregroundStyle(.secondary)
                 Picker("Idioma", selection: $settings.localeIdentifier) {
                     ForEach(Self.locales, id: \.self) { Text(Locale.current.localizedString(forIdentifier: $0) ?? $0).tag($0) }
                 }
@@ -65,6 +68,9 @@ struct SettingsView: View {
 
             Section("Limpieza del texto") {
                 Toggle("Pulir el dictado con un modelo de lenguaje", isOn: $settings.cleanupEnabled)
+                Toggle("Decidir qué hacer si la limpieza falla", isOn: $settings.recoverFailedCleanup)
+                Text("Desactivado: pega el original y avisa si falla. Activado: conserva el texto solo en memoria; el menú permite reintentar, pegar original o descartar. Cerrar la app descarta el pendiente.")
+                    .font(.caption).foregroundStyle(.secondary)
                 if CleanupEngine.offered.count > 1 {
                     Picker("Motor", selection: $settings.cleanupEngine) {
                         ForEach(CleanupEngine.offered, id: \.self) { Text($0.title).tag($0) }
@@ -94,6 +100,7 @@ struct SettingsView: View {
         .frame(width: 480)
         .padding(.vertical, 8)
         .onAppear {
+            loadCloudKey()
             launchAtLogin = LaunchAtLogin.isEnabled
             controller.refreshPermissions()
             inputDevices = AudioInputDevice.available()
@@ -106,6 +113,7 @@ struct SettingsView: View {
         }
         .onChange(of: settings.ollamaHost) { _, host in
             settings.ollamaModel = host == .cloud ? AppSettings.defaultCloudModel : AppSettings.defaultLocalModel
+            loadCloudKey()
         }
         if settings.ollamaHost == .local {
             TextField("URL local", text: $settings.ollamaLocalURL, prompt: Text(OllamaEndpoint.defaultLocalBaseURL.absoluteString))
@@ -118,7 +126,7 @@ struct SettingsView: View {
             Toggle(settings.ollamaHost == .cloud ? "Enviar el texto dictado a Ollama Cloud para limpiarlo"
                                                  : "Enviar el texto dictado a ese servidor para limpiarlo",
                    isOn: $settings.cloudConsent)
-            Text("Sale el texto reconocido y tu vocabulario, nunca el audio. Sin este permiso se pega el texto sin limpiar.")
+            Text("Sale el texto reconocido y tu vocabulario, nunca el audio. Sin este permiso, el modo automático pega el original. Si activas Decidir qué hacer si la limpieza falla, queda pendiente hasta que elijas reintentar, pegar original o descartar en el menú.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -133,7 +141,12 @@ struct SettingsView: View {
         }
     }
 
+    private func loadCloudKey() {
+        apiKey = settings.ollamaEndpoint?.requiresAPIKey == true ? ((try? KeychainStore.ollamaAPIKey.read()) ?? "") : ""
+    }
+
     private func saveAPIKey() {
+        guard settings.ollamaEndpoint?.requiresAPIKey == true else { return }
         do {
             try KeychainStore.ollamaAPIKey.write(apiKey)
             keychainMessage = apiKey.trimmingCharacters(in: .whitespaces).isEmpty ? "Clave eliminada" : "Clave guardada"

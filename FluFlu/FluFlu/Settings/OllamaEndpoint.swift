@@ -24,7 +24,22 @@ nonisolated struct OllamaEndpoint: Equatable, Sendable {
     let model: String
 
     var chatURL: URL { baseURL.appending(path: "api/chat") }
-    var requiresAPIKey: Bool { host == .cloud }
+    /// La selección de cuenta no autoriza una URL arbitraria a recibir la clave.
+    var isCanonicalCloud: Bool {
+        guard let url = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else { return false }
+        return url.scheme?.lowercased() == "https" && url.host?.lowercased() == "ollama.com"
+            && (url.port == nil || url.port == 443) && url.user == nil && url.password == nil
+            && (url.path.isEmpty || url.path == "/") && url.query == nil && url.fragment == nil
+            && !baseURL.absoluteString.contains("%")
+    }
+    var isValid: Bool {
+        guard let url = URLComponents(url: baseURL, resolvingAgainstBaseURL: false),
+              ["http", "https"].contains(url.scheme?.lowercased() ?? ""),
+              let hostname = url.host, !hostname.isEmpty,
+              url.user == nil, url.password == nil, url.query == nil, url.fragment == nil else { return false }
+        return host != .cloud || isCanonicalCloud
+    }
+    var requiresAPIKey: Bool { host == .cloud && isCanonicalCloud }
     /// El texto sale del Mac salvo hacia un Ollama en este mismo equipo. La URL «local» admite
     /// cualquier dirección, así que se mira el host y no la opción elegida.
     var requiresConsent: Bool { !Self.loopbackHosts.contains(baseURL.host()?.lowercased() ?? "") }

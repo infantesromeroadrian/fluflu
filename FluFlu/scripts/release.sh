@@ -58,8 +58,10 @@ fi
 
 if [[ "${SKIP_TESTS:-0}" != "1" ]]; then
     step "Tests unitarios"
+    # Identidad aislada para no redirigir el inicio de la app instalada al host de pruebas.
     xcodebuild test -project "$PROJECT_DIR/FluFlu.xcodeproj" -scheme "$SCHEME" \
-        -destination 'platform=macOS,arch=arm64' -only-testing:FluFluTests -quiet
+        -destination 'platform=macOS,arch=arm64' -only-testing:FluFluTests \
+        PRODUCT_BUNDLE_IDENTIFIER=com.adrianinfantes.FluFlu.Validation.Direct -quiet
 fi
 
 step "Archive (build $BUILD_NUMBER)"

@@ -8,6 +8,8 @@ nonisolated enum OllamaFailure: CleanupError, Equatable {
     case invalidResponse
     case emptyResponse
     case transport
+    case redirect
+    case changedContent
 
     var reason: String {
         switch self {
@@ -18,6 +20,8 @@ nonisolated enum OllamaFailure: CleanupError, Equatable {
         case .invalidResponse: "respuesta con formato inesperado"
         case .emptyResponse: "el modelo devolvió una respuesta vacía"
         case .transport: "sin conexión con el servidor"
+        case .redirect: "el servidor redirige la petición; configura su URL final en Ajustes y revisa el consentimiento"
+        case .changedContent: "el modelo cambió cifras, negaciones, literales o eliminó contenido"
         }
     }
 }
@@ -90,9 +94,9 @@ final class OllamaTranscriptCleaner: TranscriptCleaner {
     }
 
     func clean(_ rawTranscript: String, vocabulary: [String]) async throws -> String {
-        guard let endpoint = endpointProvider() else { throw OllamaFailure.invalidEndpoint }
+        guard let endpoint = endpointProvider(), endpoint.isValid else { throw OllamaFailure.invalidEndpoint }
         if endpoint.requiresConsent && !consentProvider() { throw OllamaFailure.consentMissing }
-        let apiKey = apiKeyProvider()?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let apiKey = endpoint.requiresAPIKey ? (apiKeyProvider()?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "") : ""
         if endpoint.requiresAPIKey && apiKey.isEmpty { throw OllamaFailure.missingAPIKey }
 
         let prompt = CleanupPrompt.make(rawTranscript: rawTranscript, vocabulary: vocabulary)
@@ -104,10 +108,28 @@ final class OllamaTranscriptCleaner: TranscriptCleaner {
 
         let data: Data
         let response: URLResponse
-        do { (data, response) = try await session.data(for: request) } catch { throw OllamaFailure.transport }
+        try Task.checkCancellation()
+        do { (data, response) = try await session.data(for: request, delegate: RejectOllamaRedirects()) }
+        catch is CancellationError { throw CancellationError() }
+        catch { try Task.checkCancellation(); throw OllamaFailure.transport }
+        try Task.checkCancellation()
         guard let http = response as? HTTPURLResponse else { throw OllamaFailure.invalidResponse }
+        if (300..<400).contains(http.statusCode) { throw OllamaFailure.redirect }
         guard (200..<300).contains(http.statusCode) else { throw OllamaFailure.httpStatus(http.statusCode) }
         guard let decoded = try? JSONDecoder().decode(OllamaChatResponse.self, from: data) else { throw OllamaFailure.invalidResponse }
-        return try OllamaResponseParser.cleanedText(from: decoded.message.content)
+        let cleaned = try OllamaResponseParser.cleanedText(from: decoded.message.content)
+        guard CleanupGuard.preservesProtectedContent(cleaned: cleaned, raw: rawTranscript, vocabulary: vocabulary) else {
+            throw OllamaFailure.changedContent
+        }
+        return cleaned
+    }
+}
+
+/// Nunca reenviar texto ni credenciales, tampoco desde localhost hacia una URL sin consentimiento.
+nonisolated final class RejectOllamaRedirects: NSObject, URLSessionTaskDelegate {
+    func urlSession(_ session: URLSession, task: URLSessionTask,
+                    willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest,
+                    completionHandler: @escaping @Sendable (URLRequest?) -> Void) {
+        completionHandler(nil)
     }
 }

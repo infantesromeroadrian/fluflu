@@ -53,6 +53,7 @@ nonisolated enum DictationPhase: Equatable, Sendable {
     case transcribing
     case cleaning(raw: String)
     case inserting
+    case recovery(reason: String)
     case failed(DictationFailure)
 
     /// Grabando no se usa un micrófono: macOS ya pone el suyo (el indicador naranja de privacidad) y en la
@@ -63,6 +64,7 @@ nonisolated enum DictationPhase: Equatable, Sendable {
         case .recording: "waveform"
         case .transcribing, .cleaning, .inserting: "ellipsis.circle"
         case .failed: "mic.slash"
+        case .recovery: "exclamationmark.bubble"
         }
     }
 
@@ -79,6 +81,8 @@ nonisolated enum DictationPhase: Equatable, Sendable {
             return "Limpiando el texto…"
         case .inserting:
             return "Insertando…"
+        case .recovery(let reason):
+            return "Dictado pendiente: \(reason)"
         case .failed(let failure):
             return failure.userMessage
         }
@@ -93,6 +97,7 @@ nonisolated enum DictationPhase: Equatable, Sendable {
         case .transcribing: "transcribing"
         case .cleaning(let raw): "cleaning(chars: \(raw.count))"
         case .inserting: "inserting"
+        case .recovery: "recovery"
         case .failed(let failure): "failed(\(failure.logName))"
         }
     }
@@ -131,7 +136,7 @@ nonisolated enum DictationReducer {
             return .recording(partial: partial, locked: true)
         case (.recording, .stopRequested):
             return .transcribing
-        case (.recording, .cancelled):
+        case (.recording, .cancelled), (.transcribing, .cancelled), (.cleaning, .cancelled):
             return .idle
         case (.transcribing, .transcriptReady(let raw)):
             return raw.isEmpty ? .idle : .cleaning(raw: raw)

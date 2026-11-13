@@ -13,15 +13,20 @@ final class DictationController {
     private static let failureDisplay: Duration = .seconds(6)
 
     private(set) var phase: DictationPhase = .idle
-    private(set) var hasKeyboardAccess = KeyboardAccess.isGranted
+    private(set) var hasKeyboardAccess: Bool
+    private(set) var hasPendingDictation = false
+    private(set) var deliveryUncertain = false
+    private(set) var audioRestoreNotice: String?
 
     private let settings: AppSettings
-    private let engine: any SpeechEngine
-    private let inserter: TextInserter
-    private var shortcuts: GlobalShortcutTap?
-    private let recorder = MicrophoneRecorder()
-    private let appleCleaner: AppleTranscriptCleaner
-    private let hud = DictationHUD()
+    private let effects: DictationEffects
+    private var shortcuts: DictationShortcutSource?
+    private let appleCleaner: AppleTranscriptCleaner?
+    private let hud: DictationHUD?
+    private var pendingRaw: String?
+    private var insertionTarget: InsertionTarget?
+    private var sessionID: UUID?
+    private var terminationObserver: DictationTerminationObserver?
     private var gesture = DictationGesture()
     private var trustPolling: Task<Void, Never>?
     /// Cadencia con la que se reintenta el tap mientras falta Accesibilidad.
@@ -32,27 +37,42 @@ final class DictationController {
     private var pendingNotice: String?
     private var noticeReset: Task<Void, Never>?
 
-    init(settings: AppSettings, engine: any SpeechEngine = AppleSpeechEngine(), inserter: TextInserter = TextInserter()) {
-        self.settings = settings
-        self.engine = engine
-        self.inserter = inserter
-        appleCleaner = AppleTranscriptCleaner(locale: { [settings] in settings.locale })
+    /// La composición de producción conserva el arranque habitual. El inicializador de efectos
+    /// es puro respecto al sistema, útil también para previews y pruebas funcionales aisladas.
+    convenience init(settings: AppSettings, engine: any SpeechEngine = AppleSpeechEngine(), inserter: TextInserter = TextInserter()) {
+        let cleaner = AppleTranscriptCleaner(locale: { [settings] in settings.locale })
+        self.init(settings: settings, effects: .live(settings: settings, engine: engine,
+                                                   inserter: inserter, appleCleaner: cleaner),
+                  appleCleaner: cleaner, hud: DictationHUD())
+        hasKeyboardAccess = KeyboardAccess.isGranted
+        terminationObserver = DictationTerminationObserver { [weak self] in self?.shutdown() }
         // Sin permisos de teclado no hay atajo ni se puede pegar. En el primer arranque los pide la
         // bienvenida, que antes explica para qué; después, el diálogo del sistema directamente.
         if !hasKeyboardAccess && settings.onboardingCompleted { KeyboardAccess.promptOnce() }
         startShortcuts()
         Task { await warmUp() }
         LaunchAtLogin.applyCommandLineRequest()
-        do { try KeychainStore.ollamaAPIKey.adoptOwnership() } catch {
-            Self.log.warning("keychain adoption failed: \(String(describing: error))")
+        if settings.ollamaEndpoint?.requiresAPIKey == true {
+            do { try KeychainStore.ollamaAPIKey.adoptOwnership() } catch {
+                Self.log.warning("keychain adoption failed: \(String(describing: type(of: error)))")
+            }
         }
+    }
+
+    init(settings: AppSettings, effects: DictationEffects,
+         appleCleaner: AppleTranscriptCleaner? = nil, hud: DictationHUD? = nil) {
+        self.settings = settings
+        self.effects = effects
+        self.appleCleaner = appleCleaner
+        self.hud = hud
+        hasKeyboardAccess = effects.canPost()
     }
 
     // MARK: Permisos y preparación
 
     /// Estado del modelo de Apple para Ajustes; se lee al abrir la ventana porque puede cambiar
     /// (descarga del modelo, Apple Intelligence activada o no).
-    var appleCleanupStatus: String { appleCleaner.statusDescription }
+    var appleCleanupStatus: String { appleCleaner?.statusDescription ?? "No disponible" }
 
     func refreshPermissions() {
         hasKeyboardAccess = KeyboardAccess.isGranted
@@ -65,8 +85,10 @@ final class DictationController {
         refreshPermissions()
     }
 
-    func applyShortcutChange() {
-        shortcuts?.rebind(settings.shortcuts, reservesModifierKeys: reservesModifierKeys)
+    /// `false` si el sistema no aceptó el atajo nuevo (en la tienda, uno que ya usa otra app).
+    @discardableResult
+    func applyShortcutChange() -> Bool {
+        shortcuts?.rebind(settings.shortcuts, reservesModifierKeys: reservesModifierKeys) ?? true
     }
 
     /// En la variante de la tienda el tap solo escucha: el ajuste de reservar la tecla no aplica.
@@ -76,7 +98,7 @@ final class DictationController {
         // Con un tap de solo escucha el sistema puede crearlo sin permiso y no entregar nada: se
         // espera al permiso para no dar el atajo por activo.
         guard KeyboardAccess.canListen else { pollTrustUntilGranted(); return }
-        let tap = GlobalShortcutTap(bindings: settings.shortcuts, reservesModifierKeys: reservesModifierKeys) { [weak self] transition in
+        let tap = DictationShortcutSource(bindings: settings.shortcuts, reservesModifierKeys: reservesModifierKeys) { [weak self] transition in
             self?.handle(transition)
         }
         if tap.start() {
@@ -110,9 +132,9 @@ final class DictationController {
 
     /// Descarga el modelo del idioma al arrancar para que la primera pulsación no espere.
     func warmUp() async {
-        recorder.prewarm(deviceUID: settings.inputDeviceUID)
-        if settings.cleanupEnabled && settings.cleanupEngine == .apple { appleCleaner.prewarm() }
-        do { try await engine.prepare(locale: settings.locale) } catch {
+        effects.prewarm(settings.inputDeviceUID)
+        if settings.cleanupEnabled && settings.cleanupEngine == .apple { appleCleaner?.prewarm() }
+        do { try await effects.prepare(settings.locale) } catch {
             Self.log.error("warm-up failed: \(String(describing: error))")
         }
     }
@@ -148,129 +170,252 @@ final class DictationController {
         }
     }
 
-    private func startDictation() {
-        guard !phase.isBusy else { gesture.reset(); return }
-        // Sin permiso para pegar, el dictado se perdería al final, y con consentimiento ya habría salido
-        // hacia Ollama: se avisa antes de grabar. Solo puede pasar en la tienda, donde escuchar y pegar se
-        // conceden por separado.
-        guard KeyboardAccess.canPost else { gesture.reset(); fail(.accessibilityDenied); return }
+    func startDictation() {
+        guard !phase.isBusy, !hasPendingDictation else {
+            // Sin esta línea, una pulsación ignorada no dejaba rastro y parecía un fallo del atajo.
+            Self.log.warning("dictation not started: \(self.hasPendingDictation ? "pending dictation unresolved" : "busy in \(self.phase.logSummary)")")
+            gesture.reset()
+            return
+        }
+        guard effects.canPost() else { gesture.reset(); fail(.accessibilityDenied); return }
+        guard let target = effects.target() else { gesture.reset(); fail(.insertion); return }
+        insertionTarget = target
         pendingNotice = nil
         noticeReset?.cancel()
+        failureReset?.cancel()
+        deliveryUncertain = false
+        let id = UUID()
+        sessionID = id
         apply(.keyPressed)
-        session = Task { await record() }
+        session = Task { await record(id: id) }
     }
 
-    private func finishDictation() {
+    func finishDictation() {
         guard case .recording = phase else { return }
-        recorder.stop()
+        stopCapture()
         apply(.stopRequested)
     }
 
-    private func record() async {
-        hud.show(status: phase.statusText)
+    private func stopCapture() {
+        effects.stopCapture()
+        if !effects.endMute() {
+            audioRestoreNotice = "No se pudo restaurar el sonido. Comprueba el mute de la salida en Ajustes del Sistema."
+        }
+    }
+
+    func cancelDictation() {
+        // Una vez iniciada la inserción, el receptor podría haber recibido ⌘V. Se deja terminar
+        // la restauración del portapapeles y nunca se ofrece reintentar una entrega ambigua.
+        if case .inserting = phase { return }
+        sessionID = nil
+        session?.cancel()
+        session = nil
+        stopCapture()
+        gesture.reset()
+        if hasPendingDictation { recover(reason: "Operación cancelada; el original sigue disponible.") }
+        else { apply(.reset); hud?.hide() }
+    }
+
+    func shutdown() {
+        cancelDictation()
+        stopCapture()
+        trustPolling?.cancel()
+        failureReset?.cancel()
+        noticeReset?.cancel()
+    }
+
+    func discardPending() {
+        guard case .recovery = phase else { return }
+        clearPending()
+        sessionID = nil
+        apply(.reset)
+        hud?.hide()
+    }
+
+    func retryCleanup() {
+        guard case .recovery = phase, !deliveryUncertain, let raw = pendingRaw else { return }
+        let id = UUID()
+        sessionID = id
+        phase = .cleaning(raw: raw)
+        hud?.show(status: phase.statusText)
+        session = Task { await processPending(id: id, retry: true) }
+    }
+
+    func pasteOriginal() {
+        guard case .recovery = phase, !deliveryUncertain, let raw = pendingRaw else { return }
+        let id = UUID()
+        sessionID = id
+        // Bloquea inmediatamente un segundo clic, antes de que empiece la tarea.
+        phase = .cleaning(raw: raw)
+        session = Task { await deliver(raw, id: id) }
+    }
+
+    private func isCurrent(_ id: UUID) -> Bool { sessionID == id && !Task.isCancelled }
+
+    private func record(id: UUID) async {
+        hud?.show(status: phase.statusText)
         do {
-            let readyStart = ContinuousClock.now
-            guard await MicrophoneRecorder.requestPermission() else { throw DictationFailure.microphoneDenied }
-            try await engine.prepare(locale: settings.locale)
-            Self.log.info("ready to record in \(MicrophoneRecorder.milliseconds(ContinuousClock.now - readyStart)) ms")
-            // Si la tecla se soltó mientras esperábamos permisos o modelo, no hay audio que transcribir.
-            guard case .recording = phase else { gesture.reset(); apply(.reset); hud.hide(); return }
-            try recorder.start(deviceUID: settings.inputDeviceUID)
-            let outcome = try await engine.transcribe(recorder.ingress, locale: settings.locale) { [weak self] partial in
-                self?.apply(.partialTranscript(partial))
+            guard await effects.requestMicrophone() else { throw DictationFailure.microphoneDenied }
+            guard isCurrent(id) else { return }
+            try await effects.prepare(settings.locale)
+            guard isCurrent(id) else { return }
+            guard case .recording = phase else { gesture.reset(); apply(.reset); hud?.hide(); return }
+            effects.beginMute(settings.muteOutputDuringDictation)
+            try effects.startCapture(settings.inputDeviceUID)
+            let raw = try await effects.transcribe(settings.locale) { [weak self] partial in
+                guard let self, self.sessionID == id else { return }
+                self.apply(.partialTranscript(partial))
             }
-            guard !Task.isCancelled else { return }
-            apply(.transcriptReady(outcome.text))
-            guard case .cleaning(let raw) = phase else { hud.hide(); return }
-            let cleaned = try await clean(raw)
-            apply(.cleanupFinished(cleaned))
-            guard case .inserting = phase else { finishHUD(); return }
-            try await inserter.insert(cleaned)
+            guard isCurrent(id) else { return }
+            stopCapture()
+            // Un motor puede terminar por sí mismo antes de soltar la tecla.
+            if case .recording = phase { apply(.stopRequested) }
+            gesture.reset()
+            apply(.transcriptReady(raw))
+            guard case .cleaning = phase else {
+                Self.log.warning("empty transcript; nothing to insert")
+                hud?.hide()
+                return
+            }
+            pendingRaw = raw
+            hasPendingDictation = true
+            await processPending(id: id, retry: false)
+        } catch {
+            guard isCurrent(id) else { return }
+            stopCapture()
+            // Solo el tipo: la descripción de algunos errores podría citar el texto dictado.
+            Self.log.error("dictation failed: \((error as? DictationFailure)?.logName ?? String(describing: type(of: error)))")
+            fail((error as? DictationFailure) ?? .transcription)
+        }
+    }
+
+    private func processPending(id: UUID, retry: Bool) async {
+        guard let raw = pendingRaw else { return }
+        if retry && !settings.cleanupEnabled {
+            recover(reason: "La limpieza está desactivada. Actívala para reintentar o elige Pegar original.")
+            return
+        }
+        do {
+            var cleaned = raw
+            if settings.cleanupEnabled {
+                let selectedEngine = settings.cleanupEngine
+                let vocabulary = settings.vocabularyTerms
+                cleaned = try await effects.clean(raw, vocabulary)
+                guard isCurrent(id) else { return }
+                // Defensa también en el borde de entrega, incluidos limpiadores inyectados.
+                if selectedEngine == .ollama && !CleanupGuard.preservesProtectedContent(
+                    cleaned: cleaned, raw: raw, vocabulary: vocabulary) {
+                    throw OllamaFailure.changedContent
+                }
+                if cleaned.isEmpty && !CleanupGuard.isOnlyFillerSounds(raw) { throw OllamaFailure.emptyResponse }
+            }
+            guard isCurrent(id) else { return }
+            await deliver(cleaned, id: id)
+        } catch {
+            guard isCurrent(id) else { return }
+            let reason = (error as? any CleanupError)?.reason ?? "error inesperado del modelo"
+            // Los motivos son textos fijos de la app, sin contenido dictado.
+            Self.log.warning("cleanup failed\(retry ? " on retry" : ""): \(reason)")
+            // En un reintento nunca se transforma silenciosamente una decisión explícita en pegar
+            // bruto, aunque el ajuste se haya cambiado mientras había texto pendiente.
+            if settings.recoverFailedCleanup || retry {
+                recover(reason: reason)
+            } else {
+                if (error as? OllamaFailure) != .consentMissing {
+                    pendingNotice = DictationFailure.cleanup(reason).userMessage
+                }
+                await deliver(raw, id: id)
+            }
+        }
+    }
+
+    private func deliver(_ text: String, id: UUID) async {
+        guard isCurrent(id) else { return }
+        if text.isEmpty { clearPending(); apply(.reset); finishHUD(); return }
+        guard effects.canPost() else { recover(reason: DictationFailure.accessibilityDenied.userMessage); return }
+        guard let insertionTarget, effects.target() == insertionTarget else {
+            recover(reason: "Vuelve a la aplicación donde empezó el dictado y elige Reintentar o Pegar original desde el menú.")
+            return
+        }
+        phase = .inserting
+        hud?.update(status: phase.statusText)
+        do {
+            try await effects.insert(text, insertionTarget)
+            guard sessionID == id else { return }
+            clearPending()
             apply(.inserted)
             finishHUD()
-        } catch let failure as DictationFailure {
-            recorder.stop()
-            fail(failure)
         } catch {
-            recorder.stop()
-            Self.log.error("dictation failed: \(String(describing: error))")
-            fail(.transcription)
+            guard sessionID == id else { return }
+            if let failure = error as? TextInsertionFailure, failure.wasNotDispatched {
+                recover(reason: failure.userMessage)
+                return
+            }
+            // No se conoce si el receptor llegó a recibir el pegado. No volver a entregarlo.
+            deliveryUncertain = true
+            recover(reason: "No se pudo confirmar la inserción. Comprueba la aplicación de destino; solo se permite descartar para evitar duplicados.")
         }
     }
 
-    /// La limpieza es opcional por ajuste; cuando falla, el contrato es insertar el texto bruto
-    /// y avisar, porque perder un dictado entero es peor que pegarlo sin pulir.
-    private func clean(_ raw: String) async throws -> String {
-        guard settings.cleanupEnabled else { return raw }
-        let cleaner: any TranscriptCleaner = switch settings.cleanupEngine {
-        case .apple:
-            appleCleaner
-        case .ollama:
-            OllamaTranscriptCleaner(
-                endpoint: { [settings] in settings.ollamaEndpoint },
-                apiKey: { (try? KeychainStore.ollamaAPIKey.read()) ?? nil },
-                consent: { [settings] in settings.cloudConsent }
-            )
-        }
-        let cleaned: String
-        do {
-            cleaned = try await cleaner.clean(raw, vocabulary: settings.vocabularyTerms)
-        } catch OllamaFailure.consentMissing {
-            // No aceptar el envío es una elección de la bienvenida o de Ajustes, no un fallo: se pega
-            // el texto tal cual sin el aviso de limpieza fallida.
-            return raw
-        } catch let failure as any CleanupError {
-            return keepRaw(raw, reason: failure.reason)
-        } catch {
-            Self.log.error("unexpected cleanup error: \(String(describing: type(of: error)))")
-            return keepRaw(raw, reason: "error inesperado del modelo")
-        }
-        // Un modelo no decide tirar un dictado con palabras: tomaba órdenes dictadas («traduce
-        // esto…») por instrucciones y devolvía el centinela de vacío. Solo los sonidos de relleno
-        // justifican no pegar nada.
-        if cleaned.isEmpty && !CleanupGuard.isOnlyFillerSounds(raw) {
-            return keepRaw(raw, reason: "el modelo devolvió el dictado vacío")
-        }
-        return cleaned
+    private func clearPending() {
+        pendingRaw = nil
+        hasPendingDictation = false
+        deliveryUncertain = false
+        insertionTarget = nil
     }
 
-    /// Plan B de la limpieza: el texto bruto se pega igual y el aviso se muestra al terminar.
-    private func keepRaw(_ raw: String, reason: String) -> String {
-        Self.log.warning("cleanup failed, inserting raw transcript: \(reason)")
-        pendingNotice = DictationFailure.cleanup(reason).userMessage
-        return raw
+    private func recover(reason: String) {
+        gesture.reset()
+        Self.log.warning("dictation pending: \(reason)")
+        phase = .recovery(reason: reason)
+        hud?.show(status: "Dictado pendiente. Abre el menú de FluFlu.")
     }
 
     /// Muestra el aviso pendiente un rato tras pegar, o cierra la HUD si no hay nada que contar.
     /// Antes el aviso se ponía durante la limpieza y la HUD lo sobrescribía en el mismo instante.
     private func finishHUD() {
-        guard let notice = pendingNotice else { hud.hide(); return }
+        guard let notice = pendingNotice else { hud?.hide(); return }
         pendingNotice = nil
-        hud.show(status: notice)
+        hud?.show(status: notice)
         noticeReset?.cancel()
         noticeReset = Task { [weak self] in
             try? await Task.sleep(for: Self.failureDisplay)
             guard let self, !Task.isCancelled, !self.phase.isBusy else { return }
-            self.hud.hide()
+            self.hud?.hide()
         }
     }
 
     private func apply(_ event: DictationEvent) {
         phase = DictationReducer.reduce(phase, event)
         Self.log.info("phase -> \(self.phase.logSummary)")
-        hud.update(status: phase.statusText)
+        hud?.update(status: phase.statusText)
     }
 
     private func fail(_ failure: DictationFailure) {
         gesture.reset()
         apply(.failed(failure))
-        hud.show(status: failure.userMessage)
+        hud?.show(status: failure.userMessage)
         failureReset?.cancel()
         failureReset = Task { [weak self] in
             try? await Task.sleep(for: Self.failureDisplay)
             guard let self, !Task.isCancelled, case .failed = self.phase else { return }
             self.apply(.reset)
-            self.hud.hide()
+            self.hud?.hide()
         }
     }
+}
+
+
+/// El cierre normal debe restaurar el mute antes de que termine el proceso, sin depender de
+/// que el menú haya aparecido ni encolar una Task que quizá nunca llegue a ejecutarse.
+@MainActor
+private final class DictationTerminationObserver: NSObject {
+    private let action: () -> Void
+    init(action: @escaping () -> Void) {
+        self.action = action
+        super.init()
+        NotificationCenter.default.addObserver(self, selector: #selector(terminate),
+                                               name: NSApplication.willTerminateNotification, object: nil)
+    }
+    @objc private func terminate() { action() }
 }
