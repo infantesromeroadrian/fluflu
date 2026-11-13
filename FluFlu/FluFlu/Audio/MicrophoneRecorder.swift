@@ -91,16 +91,25 @@ final class MicrophoneRecorder {
         Int(duration.components.seconds * 1000 + duration.components.attoseconds / 1_000_000_000_000_000)
     }
 
-    /// Cierra la entrada: el ingress termina y el consumidor drena lo que ya estaba encolado.
-    /// La parada va a la misma cola serie que el arranque, así nunca lo adelanta.
+    /// Cola que se sigue grabando tras pedir la parada. La tecla se suelta con la última sílaba aún
+    /// en el aire y el micrófono entrega con retraso: cerrar en el acto recortaba el final del dictado.
+    nonisolated static let releaseTail: DispatchTimeInterval = .milliseconds(250)
+
+    /// Cierra la entrada tras `releaseTail`: el ingress termina y el consumidor drena lo encolado.
+    /// La parada va a la misma cola serie que el arranque, así nunca lo adelanta. Sin sesión viva
+    /// (segunda llamada, o fallo antes de capturar) el ingress se cierra de inmediato.
     func stop() {
-        if let session {
-            let running = RunningSession(session)
-            queue.async { running.session.stopRunning() }
+        guard let session else { ingress.finish(); return }
+        let running = RunningSession(session)
+        // El sink se retiene hasta el cierre: el delegado de la salida es débil y sin él no llegaría la cola.
+        let (ingress, sink) = (self.ingress, self.sink)
+        queue.asyncAfter(deadline: .now() + Self.releaseTail) {
+            running.session.stopRunning()
+            ingress.finish()
+            _ = sink
         }
-        session = nil
-        sink = nil
-        ingress.finish()
+        self.session = nil
+        self.sink = nil
     }
 }
 
