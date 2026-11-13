@@ -28,7 +28,7 @@ Requisitos:
 • Para la limpieza del texto, una cuenta de Ollama con clave de API (ollama.com). El dictado funciona también sin ella.
 • Idiomas de dictado: español, inglés, francés, alemán, italiano y portugués.
 
-Nota: en la versión de la Mac App Store la tecla de dictado también llega a la app activa; elige en Ajustes una que no use otra app.
+Nota: el atajo de dictado queda reservado para FluFlu mientras la app está abierta; elige en Ajustes uno que no uses en otras apps.
 
 ## Palabras clave (máx. 100)
 dictado,voz a texto,transcripción,dictar,teclado,productividad,escribir,voz,notas,micrófono
